@@ -1,0 +1,13 @@
+{
+   "name": "team-capacity-bulk-update",
+   "className": "CustomApp",
+   "server": "https://rally1.rallydev.com",
+   "sdk": "2.0",
+   "javascript": [
+      "src/Utility.js",
+      "src/App.js"
+   ],
+   "css": [
+      "app.css"
+   ]
+}
