@@ -15,6 +15,8 @@ Ext.define('CustomApp', {
 	onScopeChange : function( scope ) {
 		// grab just the release data
 		app = this;
+		app.setupDateFormat();
+
 
 		if (app.devMode===true) {
 			app.release =  {
@@ -26,6 +28,11 @@ Ext.define('CustomApp', {
 			app.release = !_.isUndefined(scope) ? scope.getRecord().raw : null;
 		}
 		app.run();
+	},
+
+	setupDateFormat : function() {
+		app.dformat = app.getContext().getWorkspace().WorkspaceConfiguration.DateFormat;
+		app.extDateFormat = ( app.dformat === "MM/dd/yyyy") ? "m/d" : "d/m";
 	},
 
 	run : function() {
@@ -234,7 +241,11 @@ Ext.define('CustomApp', {
 				id : 'total',
 				header : 'Total',
 				dataIndex : 'total',
-				flex : 1
+				flex : 1,
+				width : 100,
+				renderer : function(value) {
+					return Ext.String.format('<div style="background-color:#EEEEEE">{0} h</div>', value);
+				}
 			}
 		];
 
@@ -256,6 +267,19 @@ Ext.define('CustomApp', {
 			return (value>0) ? value : "";
 		};
 
+		var iterationHeader = function(i) {
+			var start = i.get("StartDate");
+			var end = i.get("EndDate");
+
+			return i.get("Name") + "<br/>" + 
+					Ext.Date.format(start, app.extDateFormat) + 
+					" - " + 
+					Ext.Date.format(end, app.extDateFormat) +
+					" (" +
+					workingDaysBetweenDates(start,end) + 
+					")";
+		}
+
 		// add field (name & ref to capacity object) for each iteration
 		_.each(bundle.iterations,function(i,x) {
 
@@ -271,7 +295,7 @@ Ext.define('CustomApp', {
 			bundle.columns.push({
 				iterationRef : i.get("_ref"),
 				id : shortName(i),
-				header : i.get("Name") + "<br/>" + Ext.Date.format(i.get("StartDate"), 'm/d') + " - " + Ext.Date.format(i.get("EndDate"), 'm/d'),
+				header : iterationHeader(i),
 				dataIndex : shortName(i),
 				flex : 1,
 				field : {},
@@ -281,7 +305,7 @@ Ext.define('CustomApp', {
 				},
 				summaryType: 'sum',
 				summaryRenderer: function(value, summaryData, dataIndex) {
-					return Ext.String.format('<div style="background-color:#E4EECF">{0}</div>', value);
+					return Ext.String.format('<div style="background-color:#EEEEEE">{0} h</div>', value);
 				}
 			});
 		});
