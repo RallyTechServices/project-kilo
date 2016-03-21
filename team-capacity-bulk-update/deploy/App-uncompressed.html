@@ -92,7 +92,7 @@ var workingDaysBetweenDates = function(startDate, endDate) {
 Ext.define('CustomApp', {
 	extend: 'Rally.app.TimeboxScopedApp',
 	componentCls: 'app',
-	scopeType : 'release',
+	scopeType : 'iteration',
 	devMode : false,
 	// uncomment launch if setting devmode to true
 	// launch: function() {
@@ -100,12 +100,23 @@ Ext.define('CustomApp', {
 	//  app = this;
 	//  app.onScopeChange();
 	// },
+	config: {
+		defaultSettings: {
+			maxIterations : 5
+		}
+	},
 
 	onScopeChange : function( scope ) {
 		// grab just the release data
 		app = this;
 		app.setupDateFormat();
 
+		var maxIterations = parseInt(app.getSetting("maxIterations"));
+
+		app.maxIterations = !_.isNaN(maxIterations) ? maxIterations : app.config.defaultSettings.maxIterations;
+
+		console.log("scope",scope.getType(),scope);
+		console.log("scope",scope.getRecord());
 
 		if (app.devMode===true) {
 			app.release =  {
@@ -115,6 +126,7 @@ Ext.define('CustomApp', {
 			};
 		} else {
 			app.release = !_.isUndefined(scope) ? scope.getRecord().raw : null;
+			app.scope = scope;
 		}
 		app.run();
 	},
@@ -151,7 +163,8 @@ Ext.define('CustomApp', {
 		console.log("_getRelease");
 		var deferred = Ext.create('Deft.Deferred');
 		deferred.resolve({
-			release : app.release
+			release : app.release,
+			scope : app.scope
 		});
 		return deferred.promise;
 	},
@@ -192,6 +205,20 @@ Ext.define('CustomApp', {
 		return deferred.promise;
 	},
 
+	createIterationQuery : function(scope) {
+
+		if (scope.getType === "release") {
+			return [
+				{ property : "EndDate", operator : "<=", value : scope.getRecord().get("ReleaseDate") },
+				{ property : "EndDate", operator : ">", value : scope.getRecord().get("ReleaseStartDate") }
+			]
+		} else {
+			return [
+				{ property : "EndDate", operator : ">=", value : scope.getRecord().get("EndDate") },
+			]
+		}
+	},
+
 	_loadIterations : function(bundle) {
 		console.log("_loadIterations");
 		var release = bundle.release;
@@ -200,16 +227,22 @@ Ext.define('CustomApp', {
 		_loadAStoreWithAPromise(
 				"Iteration", 
 				["Name","StartDate","EndDate"], 
-				[
-					{ property : "EndDate", operator : "<=", value : release.ReleaseDate },
-					{ property : "EndDate", operator : ">", value : release.ReleaseStartDate }
-				], {
+				app.createIterationQuery(bundle.scope),
+				// [
+				// 	{ property : "EndDate", operator : "<=", value : release.ReleaseDate },
+				// 	{ property : "EndDate", operator : ">", value : release.ReleaseStartDate }
+				// ], {
+				{
 					projectScopeDown : false
 				},
 				"EndDate"
 			).then({
 				success : function(records) {
+					if (bundle.scope.getType()==="iteration")
+						records = records.slice(0,app.maxIterations);
 					bundle.iterations = records;
+					console.log(_.map(records,function(r){return r.get("Name")}));
+
 					if (records.length>0)
 						deferred.resolve(bundle);
 					else
@@ -643,7 +676,23 @@ Ext.define('CustomApp', {
 		app.add(app.grid);
 		deferred.resolve(bundle);
 		return deferred.promise;
+	},
+
+	getSettingsFields: function() {
+
+		return [
+		{
+				name: 'maxIterations',
+				xtype: 'rallytextfield',
+				boxLabelAlign: 'after',
+				fieldLabel: 'Maximum number of iterations to show',
+				margin: '0 0 15 50',
+				labelStyle : "width:200px;",
+				afterLabelTpl: 'Enter a<span style="color:#999999;"><i> number </i></span> which represents the maximum number of iteration columns'
+		} ];
+
 	}
+
 
 });
 
