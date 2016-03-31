@@ -3,7 +3,7 @@ var app = null;
 Ext.define('CustomApp', {
 	extend: 'Rally.app.TimeboxScopedApp',
 	componentCls: 'app',
-	scopeType : 'iteration',
+	scopeType : 'release',
 	devMode : false,
 	// uncomment launch if setting devmode to true
 	// launch: function() {
@@ -125,7 +125,7 @@ Ext.define('CustomApp', {
 			];
 		} else {
 			return [
-				{ property : "EndDate", operator : ">=", value : scope.getRecord().get("EndDate") },
+				{ property : "StartDate", operator : ">=", value : scope.getRecord().get("StartDate") },
 			]
 		}
 	},
@@ -134,23 +134,25 @@ Ext.define('CustomApp', {
 		console.log("_loadIterations");
 		var release = bundle.release;
 		var deferred = Ext.create('Deft.Deferred');
-		// model_name, model_fields, filters,ctx,order
+		var query = app.createIterationQuery(bundle.scope);
+		console.log("Iteration Query",query);
+
 		_loadAStoreWithAPromise(
 				"Iteration", 
 				["Name","StartDate","EndDate"], 
-				app.createIterationQuery(bundle.scope),
-				// [
-				// 	{ property : "EndDate", operator : "<=", value : release.ReleaseDate },
-				// 	{ property : "EndDate", operator : ">", value : release.ReleaseStartDate }
-				// ], {
+				query,
 				{
 					projectScopeDown : false
 				},
-				"EndDate"
+				"StartDate"
 			).then({
 				success : function(records) {
+					records = _.sortBy(records,function(r){return r.get("StartDate")});
+					console.log(_.map(_.clone(records),function(r){return r.get("Name")}));
+
 					if (bundle.scope.getType()==="iteration")
 						records = records.slice(0,app.maxIterations);
+					console.log("Iterations",records);
 					bundle.iterations = records;
 					console.log(_.map(records,function(r){return r.get("Name")}));
 
@@ -473,6 +475,7 @@ Ext.define('CustomApp', {
 			record.set("Capacity",value);
 			record.save({
 				callback : function(result,operation) {
+					console.log(result,operation);
 					callback(operation.wasSuccessful());
 				}
 			});
