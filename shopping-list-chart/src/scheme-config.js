@@ -18,9 +18,10 @@ var configSchemes = {
 			var capacityX  = this.seriesLabels.indexOf("Capacity");
 			var loadX      = this.seriesLabels.indexOf("Load");
 
+			// console.log("dayindex",dayIndex,bundle.todayIndex);
 
 			// if date is in future return null array
-			if (dayIndex > (bundle.todayIndex+1)) {
+			if ((bundle.todayIndex!==-1)&&(dayIndex > (bundle.todayIndex+1))) {
 				return _.map(this.seriesLabels,function(label){
 					return empty;
 				});
@@ -173,6 +174,7 @@ var configSchemes = {
 			// how much of the remaining ToDo you can deliver with your capacity – 
 			// and not how much you’re loaded."
 			setDataColorValues(values);
+			// console.log("values",_.map(values,function(v){return v.value}));
 
 			return values;
 		}

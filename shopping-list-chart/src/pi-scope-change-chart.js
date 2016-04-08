@@ -116,7 +116,7 @@ Ext.define('Rally.technicalservices.scopeChangeChart',{
             });
         }
         // show a last plotline to show the end of the release
-        console.log("last date",config.releaseDateString,_.last(config.dateRange));
+        // console.log("last date",config.releaseDateString,_.last(config.dateRange));
         this.chartConfig.xAxis.plotLines.push({
                 color : 'gray',
                 dashStyle: 'dash',

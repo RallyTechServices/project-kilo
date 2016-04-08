@@ -43,7 +43,7 @@ Ext.define('CustomApp', {
 
 		app = this;
 		this.clear();
-		console.log("onScopeChange",scope,scope.getRecord());
+		// console.log("onScopeChange",scope,scope.getRecord());
 		if (_.isNull(scope.getRecord())) {
 			this.add({html:"Select A Release"});
 			return;
@@ -172,10 +172,10 @@ Ext.define('CustomApp', {
 		app._loadAStoreWithAPromise(
 				"Release", 
 				true
-				// ["Name","ReleaseStartDate","ReleaseDate"], 
 				[{ property : "Name", operator : "=", value : release.Name }]
 			).then({
 				success : function(records) {
+					// console.log("releases",records);
 					bundle.releases = records;
 					deferred.resolve(bundle);
 				},
@@ -229,6 +229,7 @@ Ext.define('CustomApp', {
 					for (var i = 0, ii = store.getTotalCount(); i < ii; ++i) {
 						snapshots.push(store.getAt(i).data);
 					}
+					// console.log("snapshots",snapshots);
 					bundle.snapshots = snapshots;
 					deferred.resolve(bundle);
 				}
@@ -394,7 +395,7 @@ Ext.define('CustomApp', {
 
 		var baselineType = app.getSetting("baselineType");
 		var baselineDate = null;
-		console.log(baselineType,app.getSetting('baselineDate'));
+		// console.log(baselineType,app.getSetting('baselineDate'));
 
 		var indexInRange = function(date) {
 			return _.findIndex(range, function(r) {
@@ -411,13 +412,13 @@ Ext.define('CustomApp', {
 		}
 		if (baselineType ==='Select Date') {
 			var bd = app.getSetting('baselineDate');
-			console.log("baselinedate",bd);
+			// console.log("baselinedate",bd);
 			app.dformat = app.getContext().getWorkspace().WorkspaceConfiguration.DateFormat;
 			app.dformat = app.dformat.toUpperCase();
-			console.log("dateformat",app.dformat.toUpperCase());
+			// console.log("dateformat",app.dformat.toUpperCase());
 
 			baselineDate = moment( moment(app.getSetting('baselineDate'),app.dformat).format("M/D/YYYY"));
-			console.log("baselineDate",baselineDate);
+			// console.log("baselineDate",baselineDate);
 			return indexInRange(baselineDate.format());
 		}
 		if (baselineType==='ScopeBaselineDate Field') {
