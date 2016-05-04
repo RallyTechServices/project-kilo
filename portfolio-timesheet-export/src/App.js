@@ -197,7 +197,7 @@ Ext.define('CustomApp', {
             value: 0
         });
 
-        console.log(filter);
+        //console.log(filter);
 
         Ext.create('Rally.data.wsapi.Store', {
             model: "TimeEntryValue",
@@ -221,6 +221,7 @@ Ext.define('CustomApp', {
                         if (!_.isUndefined(message)) {
                             app.remove(message);
                         }
+                        console.log('records', records);
                         app.createArrayStoreFromRecords(records);
                     }
                 );
@@ -304,6 +305,7 @@ Ext.define('CustomApp', {
 
         // convert records into a json data structure
         var data = _.map(records, function(r) {
+            
             return {
                 "UserName": r.get("UserObject").get("UserName"),
                 "TaskDisplayString": r.get("TimeEntryItemObject").get("TaskDisplayString"),
@@ -369,6 +371,7 @@ Ext.define('CustomApp', {
                         text: f.displayName,
                         dataIndex: f.name,
                         renderer: function(value, metaData, record, rowIdx, colIdx, store, view) {
+
                             return app.renderLink(value, record);
                         }
                     };
@@ -394,15 +397,16 @@ Ext.define('CustomApp', {
 
     // creates a url link for the column based on the formatted id in the column
     renderLink: function(textValue, record) {
-
+        
         var fid = _.first(textValue.split(":"));
+        
         var obj = _.find(record.get("Hierarchy"), function(hObj) {
             return fid === hObj.get("FormattedID");
         });
         if (!_.isUndefined(obj) && !_.isNull(obj)) {
             return '<a href=' + Rally.nav.Manager.getDetailUrl(obj) + '>' + textValue + '</a>';
         }
-        return "";
+        return textValue;
     },
 
     readRelatedValues: function(values, callback) {
@@ -418,6 +422,7 @@ Ext.define('CustomApp', {
                         // read work item hierarchies
                         app.readHierarchies(items).then({
                             success: function(hierarchies) {
+
                                 app.setValues(values, hierarchies, "Hierarchy");
                                 callback();
                             }
@@ -487,6 +492,7 @@ Ext.define('CustomApp', {
                         model.load(object, {
                             fetch: true,
                             callback: function(result, operation) {
+                                
                                 deferred.resolve(result);
                             }
                         });
@@ -524,7 +530,7 @@ Ext.define('CustomApp', {
                     parentAttr = 'Parent';
                     break;
             }
-
+            
             var parentRef = obj.get(parentAttr);
             if (!_.isUndefined(parentRef) && !_.isNull(parentRef)) {
                 // app.readObject(parentRef._type,parentRef).then({
