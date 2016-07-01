@@ -3,6 +3,8 @@ portfolio-timesheet-export
 
 ## Overview
 
+* If the time was recorded against a task but the task has been reparented, then the story will be shown without a link
+
 
 ## License
 
