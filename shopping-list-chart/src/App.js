@@ -171,11 +171,13 @@ Ext.define('CustomApp', {
 		var deferred = Ext.create('Deft.Deferred');
 		app._loadAStoreWithAPromise(
 				"Release", 
-				true
+				// true,
+				["Name","ReleaseDate","ReleaseStartDate","c_ScopeBaselineDate","ObjectID"],
 				[{ property : "Name", operator : "=", value : release.Name }]
+				
 			).then({
 				success : function(records) {
-					// console.log("releases",records);
+					console.log("releases",records);
 					bundle.releases = records;
 					deferred.resolve(bundle);
 				},
