@@ -3,6 +3,8 @@
 # ---
 require "rally_api"
 require "CSV"
+require "nokogiri"
+
 
 def check_usage()
   if ARGV.length == 0 
@@ -305,23 +307,25 @@ def get_header(columns)
   return heads
 end
 
-def get_csv(rows)
+def get_csv(rows,error)
   columns = get_columns()
   csv_array = [get_header(columns)]
   rows.each do |row|
-    row_csv_array = []
-    columns.each do |column|
-      field = column['dataIndex']
-      row_csv_array.push(escape_text_for_csv(row[field]))
+    if !error || !is_valid(row)
+      row_csv_array = []
+      columns.each do |column|
+        field = column['dataIndex']
+        row_csv_array.push(escape_text_for_csv(row[field]))
+      end
+      csv_array.push(row_csv_array)
     end
-    csv_array.push(row_csv_array)
   end
   
   return csv_array
 end
 
 def export_csv(rows)
-  csv = get_csv(rows)
+  csv = get_csv(rows,false)
   filename = "export.csv"
   
   puts "Writing to #{filename}"  
@@ -332,7 +336,109 @@ def export_csv(rows)
   end
 end
 
+def errors_csv(rows)
+  csv = get_csv(rows,true)
+  filename = "SAPErrors.csv"
+  
+  puts "Writing to #{filename}"  
+  CSV.open("#{filename}", "wb") do |csv_file|
+    csv.each do |csv_row|
+        csv_file << csv_row
+    end
+  end
+end
+
+
+def sap_headers_xml(rows)
+  filename = "E1CATS_INSERT.xml.txt"
+  
+  puts "Writing to #{filename}"  
+
+
+  builder = Nokogiri::XML::Builder.new do |xml|
+    xml.E1CATS_INSERT {
+      rows.each do |row|
+        if is_valid(row)  
+          xml.Datarow {
+            xml.GUID row['ObjectID']
+            xml.PROFILE row['c_KMDEmployeeID']
+            xml.TEXT_FORMAT_IMP  "ITF"
+          }
+        end
+      end
+    }
+  end
+
+  File.write(filename, builder.to_xml)
+
+end
+
+
+def sap_data_xml(rows)
+  filename = "E1BPCATS1.xml.txt"
+  
+  puts "Writing to #{filename}"  
+
+  builder = Nokogiri::XML::Builder.new do |xml|
+    xml.E1CATS_INSERT {
+      rows.each do |row|
+        if is_valid(row)   
+          xml.Datarow {
+            xml.EXTAPPLICATION "RALLY"
+            xml.GUID row['ObjectID']
+            xml.WORKDATE row['Date']
+            xml.EMPLOYEENUMBER  row['c_KMDEmployeeID']
+            xml.ACTTYPE "1"
+            xml.NETWORK row['c_SAPNetwork']
+            xml.ACTIVITY row['c_SAPOperation']
+            xml.SUB_ACTIVITY row['c_SAPSubOperation']
+            xml.CATSHOURS row['Hours']
+            xml.UNIT "H"
+            xml.SHORTTEXT row['TaskDisplayString'] || row['WorkProductDisplayString']
+            xml.LONGTEXT "X"
+          }
+        end
+      end
+    }
+  end
+
+  File.write(filename, builder.to_xml)
+
+end
+
+def sap_trailer_xml(rows)
+  filename = "E1BPCATS8.xml.txt"
+  
+  puts "Writing to #{filename}"  
+
+  builder = Nokogiri::XML::Builder.new do |xml|
+    xml.E1CATS_INSERT {
+      rows.each do |row|
+        if is_valid(row)     
+          xml.Datarow {
+            xml.GUID row['ObjectID']
+            xml.ROW "1"
+            xml.FORMAT_COL  "*"
+            xml.TEXT_LINE row['TaskDisplayString'] || row['WorkProductDisplayString']
+          }
+        end
+      end
+      }
+    end
+
+  File.write(filename, builder.to_xml)
+end
+
+def is_valid(row)
+  if (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+    return true
+  else
+    return false
+  end
+end
+
 ## - start here -
+
 check_usage()
 connect_to_rally()
 pi_types = get_pi_types()
@@ -346,7 +452,10 @@ rows = add_artifact_to_time_values(rows)
 
 rows = convert_to_output_array(rows,pi_types)
 
-
-# todo export to files
 export_csv(rows)
+errors_csv(rows)
+sap_headers_xml(rows)
+sap_data_xml(rows)
+sap_trailer_xml(rows)
 
+puts "Done!"
