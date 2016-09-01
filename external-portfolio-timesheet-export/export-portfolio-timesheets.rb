@@ -226,8 +226,8 @@ def convert_to_output_array(rows,pi_types)
       "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
       "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
       'test'  => get_field_value(row, 'FormattedID'),
-      'c_SAPNetwork'  => get_field_value(row, 'c_SAPNetwork'),
       'c_SAPProject'  => get_field_value(row, 'c_SAPProject'),
+      'c_SAPNetwork'  => get_field_value(row, 'c_SAPNetwork'),
       'c_SAPOperation'  => get_field_value(row, 'c_SAPOperation'),
       'c_SAPSubOperation'  => get_field_value(row, 'c_SAPSubOperation'),
       'EpicID' => get_type_field_value(row, pi_types[1], "FormattedID"),
@@ -274,12 +274,12 @@ def get_columns()
               'text' => 'Feature Title',
               'dataIndex' => 'FeatureName'
           }, {
-              'text' => 'SAP Network',
-              'dataIndex' => 'c_SAPNetwork'
-          }, {
               'text' => 'SAP project',
               'dataIndex' => 'c_SAPProject'
           },{
+              'text' => 'SAP Network',
+              'dataIndex' => 'c_SAPNetwork'
+          }, {
               'text' => 'SAP Operation',
               'dataIndex' => 'c_SAPOperation'
           }, {
@@ -391,19 +391,18 @@ def sap_data_xml(rows)
       rows.each do |row|
         if is_valid(row)   
           xml.Datarow {
-            xml.EXTAPPLICATION "RALLY"
             xml.GUID row['ObjectID']
             xml.WORKDATE row['Date']
             xml.EMPLOYEENUMBER  row['c_KMDEmployeeID']
             xml.ACTTYPE "1"
             xml.NETWORK row['c_SAPNetwork']
-            xml.SAPPROJECT row['c_SAPProject']
             xml.ACTIVITY row['c_SAPOperation']
             xml.SUB_ACTIVITY row['c_SAPSubOperation']
             xml.CATSHOURS row['Hours']
             xml.UNIT "H"
             xml.SHORTTEXT row['TaskDisplayString'] || row['WorkProductDisplayString']
             xml.LONGTEXT "X"
+            xml.EXTAPPLICATION "RALLY"
           }
         end
       end
