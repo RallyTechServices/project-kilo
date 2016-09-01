@@ -107,19 +107,18 @@ Ext.define("GridExporter", {
         _.each(data, function(record) {
             if (record.get('c_SAPNetwork') && record.get('c_SAPOperation') && record.get('c_KMDEmployeeID')) {
                 text += this._XMLIndent(1, 'Datarow', false,
-                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '') +
                     this._XMLIndent(2, 'GUID', true, record.get('ObjectID') || '') +
                     this._XMLIndent(2, 'WORKDATE', true, record.get('Date')) /*Ext.Date.format(new Date(record.get('Date')), 'Ymd')) */ +
                     this._XMLIndent(2, 'EMPLOYEENUMBER', true, record.get('c_KMDEmployeeID') || '') +
                     this._XMLIndent(2, 'ACTTYPE', true, '1') +
                     this._XMLIndent(2, 'NETWORK', true, record.get('c_SAPNetwork') || '') +
-                    this._XMLIndent(2, 'SAP PROJECT', true, record.get('c_SAPProject') || '') +
                     this._XMLIndent(2, 'ACTIVITY', true, record.get('c_SAPOperation') || '') +
                     (record.get('c_SAPSubOperation') ? this._XMLIndent(2, 'SUB_ACTIVITY', true, record.get('c_SAPSubOperation')) : '') +
                     this._XMLIndent(2, 'CATSHOURS', true, record.get('Hours')) +
                     this._XMLIndent(2, 'UNIT', true, 'H') +
                     this._XMLIndent(2, 'SHORTTEXT', true, record.get('TaskDisplayString') || record.get('WorkProductDisplayString') || '') +
-                    this._XMLIndent(2, 'LONGTEXT', true, 'X')
+                    this._XMLIndent(2, 'LONGTEXT', true, 'X') +
+                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '')
                 );
             }
         }, this);

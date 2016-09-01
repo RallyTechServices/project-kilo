@@ -304,11 +304,11 @@ Ext.define('PTApp', {
             displayName: 'Feature Title',
             name: 'FeatureName'
         }, {
-            displayName: 'SAP Network',
-            name: 'c_SAPNetwork'
-        },{
             displayName: 'SAP Project',
             name: 'c_SAPProject'
+        },{
+            displayName: 'SAP Network',
+            name: 'c_SAPNetwork'
         }, {
             displayName: 'SAP Operation',
             name: 'c_SAPOperation'
@@ -348,8 +348,8 @@ Ext.define('PTApp', {
                 "WorkProductDisplayString": r.get("TimeEntryItemObject").get("WorkProductDisplayString"),
                 "FeatureID": app.getTypeFieldValue(r, app.piTypes[0], "FormattedID"),
                 "FeatureName": app.getTypeFieldValue(r, app.piTypes[0], "Name"),
-                'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
                 'c_SAPProject': app.getFieldValue(r, 'c_SAPProject'),
+                'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
                 'c_SAPOperation': app.getFieldValue(r, 'c_SAPOperation'),
                 'c_SAPSubOperation': app.getFieldValue(r, 'c_SAPSubOperation'),
                 'EpicID': app.getTypeFieldValue(r, app.piTypes[1], "FormattedID"),

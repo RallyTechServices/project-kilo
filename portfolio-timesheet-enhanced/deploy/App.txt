@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Aug 30 2016 15:53:25 GMT-0400 (EDT) -->
+    <!--  Build Date: Thu Sep 01 2016 13:16:36 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Aug 30 2016 15:53:25 GMT-0400 (EDT)";
+        var APP_BUILD_DATE = "Thu Sep 01 2016 13:16:36 GMT-0400 (EDT)";
         var STORY    = "US8846";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 105836761076;
+        var CHECKSUM = 105540324148;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -319,19 +319,18 @@ Ext.define("GridExporter", {
         _.each(data, function(record) {
             if (record.get('c_SAPNetwork') && record.get('c_SAPOperation') && record.get('c_KMDEmployeeID')) {
                 text += this._XMLIndent(1, 'Datarow', false,
-                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '') +
                     this._XMLIndent(2, 'GUID', true, record.get('ObjectID') || '') +
                     this._XMLIndent(2, 'WORKDATE', true, record.get('Date')) /*Ext.Date.format(new Date(record.get('Date')), 'Ymd')) */ +
                     this._XMLIndent(2, 'EMPLOYEENUMBER', true, record.get('c_KMDEmployeeID') || '') +
                     this._XMLIndent(2, 'ACTTYPE', true, '1') +
                     this._XMLIndent(2, 'NETWORK', true, record.get('c_SAPNetwork') || '') +
-                    this._XMLIndent(2, 'SAP PROJECT', true, record.get('c_SAPProject') || '') +
                     this._XMLIndent(2, 'ACTIVITY', true, record.get('c_SAPOperation') || '') +
                     (record.get('c_SAPSubOperation') ? this._XMLIndent(2, 'SUB_ACTIVITY', true, record.get('c_SAPSubOperation')) : '') +
                     this._XMLIndent(2, 'CATSHOURS', true, record.get('Hours')) +
                     this._XMLIndent(2, 'UNIT', true, 'H') +
                     this._XMLIndent(2, 'SHORTTEXT', true, record.get('TaskDisplayString') || record.get('WorkProductDisplayString') || '') +
-                    this._XMLIndent(2, 'LONGTEXT', true, 'X')
+                    this._XMLIndent(2, 'LONGTEXT', true, 'X') +
+                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '')
                 );
             }
         }, this);
@@ -1757,11 +1756,11 @@ Ext.define('PTApp', {
             displayName: 'Feature Title',
             name: 'FeatureName'
         }, {
-            displayName: 'SAP Network',
-            name: 'c_SAPNetwork'
-        },{
             displayName: 'SAP Project',
             name: 'c_SAPProject'
+        },{
+            displayName: 'SAP Network',
+            name: 'c_SAPNetwork'
         }, {
             displayName: 'SAP Operation',
             name: 'c_SAPOperation'
@@ -1801,8 +1800,8 @@ Ext.define('PTApp', {
                 "WorkProductDisplayString": r.get("TimeEntryItemObject").get("WorkProductDisplayString"),
                 "FeatureID": app.getTypeFieldValue(r, app.piTypes[0], "FormattedID"),
                 "FeatureName": app.getTypeFieldValue(r, app.piTypes[0], "Name"),
-                'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
                 'c_SAPProject': app.getFieldValue(r, 'c_SAPProject'),
+                'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
                 'c_SAPOperation': app.getFieldValue(r, 'c_SAPOperation'),
                 'c_SAPSubOperation': app.getFieldValue(r, 'c_SAPSubOperation'),
                 'EpicID': app.getTypeFieldValue(r, app.piTypes[1], "FormattedID"),
