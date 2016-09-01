@@ -97,8 +97,8 @@ Ext.define("GridExporter", {
         return [file, format, text];
     },
 
-    _addSAPDataFile: function(data) {
-
+    _addSAPDataFile: function(data,xmlConfig) {
+        console.log('xmlConfig>>>>>',xmlConfig);
         var file = 'E1BPCATS1';
         var format = 'data:text/text;charset=utf8';
         var text = this.self.XmlFileHeader;
@@ -107,11 +107,13 @@ Ext.define("GridExporter", {
         _.each(data, function(record) {
             if (record.get('c_SAPNetwork') && record.get('c_SAPOperation') && record.get('c_KMDEmployeeID')) {
                 text += this._XMLIndent(1, 'Datarow', false,
+                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '') +
                     this._XMLIndent(2, 'GUID', true, record.get('ObjectID') || '') +
                     this._XMLIndent(2, 'WORKDATE', true, record.get('Date')) /*Ext.Date.format(new Date(record.get('Date')), 'Ymd')) */ +
                     this._XMLIndent(2, 'EMPLOYEENUMBER', true, record.get('c_KMDEmployeeID') || '') +
                     this._XMLIndent(2, 'ACTTYPE', true, '1') +
                     this._XMLIndent(2, 'NETWORK', true, record.get('c_SAPNetwork') || '') +
+                    this._XMLIndent(2, 'SAP PROJECT', true, record.get('c_SAPProject') || '') +
                     this._XMLIndent(2, 'ACTIVITY', true, record.get('c_SAPOperation') || '') +
                     (record.get('c_SAPSubOperation') ? this._XMLIndent(2, 'SUB_ACTIVITY', true, record.get('c_SAPSubOperation')) : '') +
                     this._XMLIndent(2, 'CATSHOURS', true, record.get('Hours')) +
@@ -136,7 +138,7 @@ Ext.define("GridExporter", {
         else return null;
     },
 
-    exportSAPXML: function(grid) {
+    exportSAPXML: function(grid,xmlConfig) {
 
         var filesToSave = [];
 
@@ -150,7 +152,7 @@ Ext.define("GridExporter", {
             //            else {
             this._downloadFiles(filesToSave.concat(
                 this._addSAPHeaderFile(data),
-                this._addSAPDataFile(data),
+                this._addSAPDataFile(data,xmlConfig),
                 this._addSAPTrailerFile(data)
             ));
             //            }

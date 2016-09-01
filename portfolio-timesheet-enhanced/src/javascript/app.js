@@ -1,3 +1,7 @@
+/*
+    This app has been copied from https://github.com/wrackzone/project-kilo/tree/master/portfolio-timesheet-export and modified to fit TS Template.
+*/
+
 var app = null;
 
 Ext.define('PTApp', {
@@ -6,6 +10,34 @@ Ext.define('PTApp', {
     stateful: true,
     id: 'app',
     cache: [],
+    config: {
+        defaultSettings: {
+            extApplicationValue:'RALLY',
+            extApplication:true
+        }
+    },
+    getSettingsFields: function() {
+        var me = this;
+
+        return  [
+            {
+                name: 'extApplication',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: 25,
+                boxLabel: 'Include &lt;EXTAPPLICATION&gt;RALLY&lt;/EXTAPPLICATION&gt; to all records in the E1BPCATS1.xml file.'
+            },
+            {
+                name: 'extApplicationValue',
+                xtype: 'textfield',
+                fieldLabel: '&lt;EXTAPPLICATION/&gt; tag Value',
+                labelWidth: 125,
+                labelAlign: 'left',
+                minWidth: 200,
+                margin: 25
+            }];
+    },
     items: [{
         id: 'panel',
         xtype: 'panel',
@@ -128,7 +160,7 @@ Ext.define('PTApp', {
                             xtype: 'rallybutton',
                             text: 'SAP XML',
                             handler: function() {
-                                app.exporter.exportSAPXML(app.grid);
+                                app.exporter.exportSAPXML(app.grid,{'extApplication':app.getSetting('extApplication'),'extApplicationValue':app.getSetting('extApplicationValue')});
                                 saveDialog.destroy();
                             }
                         },
@@ -274,6 +306,9 @@ Ext.define('PTApp', {
         }, {
             displayName: 'SAP Network',
             name: 'c_SAPNetwork'
+        },{
+            displayName: 'SAP Project',
+            name: 'c_SAPProject'
         }, {
             displayName: 'SAP Operation',
             name: 'c_SAPOperation'
@@ -314,6 +349,7 @@ Ext.define('PTApp', {
                 "FeatureID": app.getTypeFieldValue(r, app.piTypes[0], "FormattedID"),
                 "FeatureName": app.getTypeFieldValue(r, app.piTypes[0], "Name"),
                 'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
+                'c_SAPProject': app.getFieldValue(r, 'c_SAPProject'),
                 'c_SAPOperation': app.getFieldValue(r, 'c_SAPOperation'),
                 'c_SAPSubOperation': app.getFieldValue(r, 'c_SAPSubOperation'),
                 'EpicID': app.getTypeFieldValue(r, app.piTypes[1], "FormattedID"),
@@ -685,111 +721,3 @@ Ext.define('PTApp', {
     }
 
 });
-
-
-// Ext.define("PTApp", {
-//     extend: 'Rally.app.App',
-//     componentCls: 'app',
-//     logger: new Rally.technicalservices.Logger(),
-//     defaults: { margin: 10 },
-//     items: [
-//         {xtype:'container',itemId:'message_box',tpl:'Hello, <tpl>{_refObjectName}</tpl>'},
-//         {xtype:'container',itemId:'display_box'}
-//     ],
-
-//     integrationHeaders : {
-//         name : "PTApp"
-//     },
-                        
-//     launch: function() {
-//         var me = this;
-//         this.setLoading("Loading stuff...");
-
-//         this.down('#message_box').update(this.getContext().getUser());
-        
-//         var model_name = 'Defect',
-//             field_names = ['Name','State'];
-        
-//         this._loadAStoreWithAPromise(model_name, field_names).then({
-//             scope: this,
-//             success: function(store) {
-//                 this._displayGrid(store,field_names);
-//             },
-//             failure: function(error_message){
-//                 alert(error_message);
-//             }
-//         }).always(function() {
-//             me.setLoading(false);
-//         });
-//     },
-      
-//     _loadWsapiRecords: function(config){
-//         var deferred = Ext.create('Deft.Deferred');
-//         var me = this;
-//         var default_config = {
-//             model: 'Defect',
-//             fetch: ['ObjectID']
-//         };
-//         this.logger.log("Starting load:",config.model);
-//         Ext.create('Rally.data.wsapi.Store', Ext.Object.merge(default_config,config)).load({
-//             callback : function(records, operation, successful) {
-//                 if (successful){
-//                     deferred.resolve(records);
-//                 } else {
-//                     me.logger.log("Failed: ", operation);
-//                     deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-//                 }
-//             }
-//         });
-//         return deferred.promise;
-//     },
-
-//     _loadAStoreWithAPromise: function(model_name, model_fields){
-//         var deferred = Ext.create('Deft.Deferred');
-//         var me = this;
-//         this.logger.log("Starting load:",model_name,model_fields);
-          
-//         Ext.create('Rally.data.wsapi.Store', {
-//             model: model_name,
-//             fetch: model_fields
-//         }).load({
-//             callback : function(records, operation, successful) {
-//                 if (successful){
-//                     deferred.resolve(this);
-//                 } else {
-//                     me.logger.log("Failed: ", operation);
-//                     deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-//                 }
-//             }
-//         });
-//         return deferred.promise;
-//     },
-    
-//     _displayGrid: function(store,field_names){
-//         this.down('#display_box').add({
-//             xtype: 'rallygrid',
-//             store: store,
-//             columnCfgs: field_names
-//         });
-//     },
-    
-//     getOptions: function() {
-//         return [
-//             {
-//                 text: 'About...',
-//                 handler: this._launchInfo,
-//                 scope: this
-//             }
-//         ];
-//     },
-    
-//     _launchInfo: function() {
-//         if ( this.about_dialog ) { this.about_dialog.destroy(); }
-//         this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
-//     },
-    
-//     isExternal: function(){
-//         return typeof(this.getAppId()) == 'undefined';
-//     }
-    
-// });
