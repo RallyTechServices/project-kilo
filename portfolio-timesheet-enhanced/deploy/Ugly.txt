@@ -3,10 +3,10 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Aug 29 2016 20:29:43 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Aug 30 2016 15:53:26 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Aug 29 2016 20:29:43 GMT-0400 (EDT)";
+        var APP_BUILD_DATE = "Tue Aug 30 2016 15:53:26 GMT-0400 (EDT)";
         var CHECKSUM = [%= checksum %];
     </script>
     

@@ -65,7 +65,9 @@ end
 def get_time_values
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
-  query.fetch = true
+  #query.fetch = true
+  query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID" #true
+
   query.limit = 999999
   query.page_size = 2000
   query.project = nil
@@ -184,15 +186,16 @@ end
 
 # get the field value at the lowest level that has a value in that field
 def get_field_value(row, field)
-  hierarchy = row["Hierarchy"]
   value = nil
-
-  hierarchy.each do |artifact|
-    if value.nil? 
-      value = artifact[field]
-    end
-  end
-  return value
+  return row["Artifact"][field]
+  # row["Artifact"].each do |artifact|
+  #   puts artifact
+  #   puts "\n"
+  #   if value.nil? 
+  #     value = artifact[field]
+  #   end
+  # end
+  # return value
 end
    
 def get_type_field_value(record, pi_type, field)
@@ -224,6 +227,7 @@ def convert_to_output_array(rows,pi_types)
       "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
       'test'  => get_field_value(row, 'FormattedID'),
       'c_SAPNetwork'  => get_field_value(row, 'c_SAPNetwork'),
+      'c_SAPProject'  => get_field_value(row, 'c_SAPProject'),
       'c_SAPOperation'  => get_field_value(row, 'c_SAPOperation'),
       'c_SAPSubOperation'  => get_field_value(row, 'c_SAPSubOperation'),
       'EpicID' => get_type_field_value(row, pi_types[1], "FormattedID"),
@@ -232,7 +236,7 @@ def convert_to_output_array(rows,pi_types)
       'ObjectID' => row["TimeEntryValueObject"]["ObjectID"],
       'Date' => Date.parse(row["TimeEntryValueObject"]['DateVal']).strftime("%Y%m%d"),
       'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
-      'Hierarchy' => row["TimeEntryValueObject"]["Hierarchy"]
+      'Hierarchy' => row["Hierarchy"]
     })
   end
   return output_rows
@@ -273,6 +277,9 @@ def get_columns()
               'text' => 'SAP Network',
               'dataIndex' => 'c_SAPNetwork'
           }, {
+              'text' => 'SAP project',
+              'dataIndex' => 'c_SAPProject'
+          },{
               'text' => 'SAP Operation',
               'dataIndex' => 'c_SAPOperation'
           }, {
@@ -390,6 +397,7 @@ def sap_data_xml(rows)
             xml.EMPLOYEENUMBER  row['c_KMDEmployeeID']
             xml.ACTTYPE "1"
             xml.NETWORK row['c_SAPNetwork']
+            xml.SAPPROJECT row['c_SAPProject']
             xml.ACTIVITY row['c_SAPOperation']
             xml.SUB_ACTIVITY row['c_SAPSubOperation']
             xml.CATSHOURS row['Hours']
@@ -445,8 +453,8 @@ pi_types = get_pi_types()
 
 puts "Fetching Time Values"
 time_values = get_time_values()
-
 rows = add_time_entry_to_time_values(time_values)
+
 rows = add_users_to_time_values(rows)
 rows = add_artifact_to_time_values(rows)
 
