@@ -401,8 +401,8 @@ def sap_data_xml(rows)
             xml.CATSHOURS row['Hours']
             xml.UNIT "H"
             xml.SHORTTEXT row['TaskDisplayString'] || row['WorkProductDisplayString']
-            xml.LONGTEXT "X"
             xml.EXTAPPLICATION "RALLY"
+            xml.LONGTEXT "X"
           }
         end
       end

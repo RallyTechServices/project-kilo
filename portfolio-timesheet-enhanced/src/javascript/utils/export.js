@@ -117,8 +117,8 @@ Ext.define("GridExporter", {
                     this._XMLIndent(2, 'CATSHOURS', true, record.get('Hours')) +
                     this._XMLIndent(2, 'UNIT', true, 'H') +
                     this._XMLIndent(2, 'SHORTTEXT', true, record.get('TaskDisplayString') || record.get('WorkProductDisplayString') || '') +
-                    this._XMLIndent(2, 'LONGTEXT', true, 'X') +
-                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '')
+                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '') + 
+                    this._XMLIndent(2, 'LONGTEXT', true, 'X')
                 );
             }
         }, this);
