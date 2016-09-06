@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Sep 01 2016 13:16:36 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Sep 06 2016 15:10:40 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Sep 01 2016 13:16:36 GMT-0400 (EDT)";
+        var APP_BUILD_DATE = "Tue Sep 06 2016 15:10:40 GMT-0400 (EDT)";
         var STORY    = "US8846";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 105540324148;
+        var CHECKSUM = 105540278320;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -329,8 +329,8 @@ Ext.define("GridExporter", {
                     this._XMLIndent(2, 'CATSHOURS', true, record.get('Hours')) +
                     this._XMLIndent(2, 'UNIT', true, 'H') +
                     this._XMLIndent(2, 'SHORTTEXT', true, record.get('TaskDisplayString') || record.get('WorkProductDisplayString') || '') +
-                    this._XMLIndent(2, 'LONGTEXT', true, 'X') +
-                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '')
+                    (xmlConfig.extApplication ? this._XMLIndent(2, 'EXTAPPLICATION', true, xmlConfig.extApplicationValue ) : '') + 
+                    this._XMLIndent(2, 'LONGTEXT', true, 'X')
                 );
             }
         }, this);
