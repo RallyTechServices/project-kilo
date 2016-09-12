@@ -1,29 +1,62 @@
-#
-# usage $0 <auth file>
-# ---
 require "rally_api"
 require "CSV"
 require "nokogiri"
+require "mail"
+require "optparse"
+require "ostruct"
+require "date"
+
+#!/usr/bin/env ruby
+# ------------------------------------------------------------------------------
+# SCRIPT:
+#       export-portfolio-timesheets.rb
+#
+# PURPOSE:
+#       Used to export portfolio time sheets weekly/ monthly and email as necessary.
+#       type export-portfolio-timesheets.rb -h to get help.
+#
+# PREREQUISITES:
+#       - Ruby version 1.9.3 or later.
+#
+# ------------------------------------------------------------------------------
 
 
 def check_usage()
-  if ARGV.length == 0 
+
+  ARGV << '-h' if ARGV.empty?
+
+  @options = OpenStruct.new
+  optparse = OptionParser.new do |opts|
+    opts.banner = "Usage: export-portfolio-timesheets.rb [options]"
+    opts.separator ""
+    opts.separator "Specific options:"
+    opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
+    opts.on('-d', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
+    opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
+
+    #{ |o| @options.mode = o }
+    opts.on("-h", "--help", "Prints this help") do
+      puts opts
+      exit
+    end
+  end
+
+  begin
+    optparse.parse!
+  rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument      #
+    puts $!.to_s                                                           # Friendly output when parsing fails
+    puts optparse                                                          #
+    exit                                                                   #
+  end      
+
+  if !FileTest.exist?(@options.auth_file)
     puts 
-    puts "Usage: ruby export-portfolio-timesheets.rb <authorization_file>"
+    puts "Authorization file #{@options.auth_file} does not exist"
     puts 
     exit 1
   end
   
-  auth_file = ARGV[0]
-  
-  if !FileTest.exist?(auth_file)
-    puts 
-    puts "Authorization file #{auth_file} does not exist"
-    puts 
-    exit 1
-  end
-  
-  require "./#{auth_file}"
+  require "./#{@options.auth_file}"
 end
 
 def connect_to_rally
@@ -62,7 +95,25 @@ def get_pi_types
   return types
 end
 
+
+#
+# (((DateVal >= "2015-09-12T00:00:00-04:00") AND (DateVal <= "2016-09-11T00:00:00-04:00")) AND (Hours > 0))
+#
+
 def get_time_values
+  end_date = Date.today - 1 # yesterday 
+  puts "start date given in argument #{@options.start_date}"
+  if(@options.start_date.nil?)
+    start_date = date_of_prev("Monday")
+  else
+    begin
+      start_date = Date.parse(@options.start_date)
+    rescue ArgumentError
+      puts "InvalidArgument: Incorrect start date format. Please enter date as YYYY-MM-DD"
+      puts 
+      exit 1
+    end
+   end
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
   #query.fetch = true
@@ -71,8 +122,7 @@ def get_time_values
   query.limit = 999999
   query.page_size = 2000
   query.project = nil
-  query.query_string = "( Hours > 0 )"
-  
+  query.query_string = "(((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0))"
   @rally.find(query)
 end
 
@@ -347,11 +397,15 @@ def errors_csv(rows)
   csv = get_csv(rows,true)
   filename = "SAPErrors.csv"
   
-  puts "Writing to #{filename}"  
+  puts "Writing to #{filename}"
   CSV.open("#{filename}", "wb") do |csv_file|
     csv.each do |csv_row|
-        csv_file << csv_row
+      csv_file << csv_row
     end
+  end
+  
+  if (@options.export_mode == "email")
+    send_email(filename, csv)
   end
 end
 
@@ -442,6 +496,30 @@ def is_valid(row)
   else
     return false
   end
+end
+
+def date_of_prev(day)
+  date  = Date.parse(day)
+  delta = date < Date.today ? 0 : 7
+  date - delta
+end
+
+def send_email(filename,data)
+
+  Mail.defaults do
+    delivery_method :smtp, address: $smtp_host, port: $smtp_port
+  end
+
+  mail = Mail.new do
+    from     $from_address
+    to       $to_address
+    subject  $email_subject
+    body     $email_body
+    add_file :filename => filename, :content => data
+  end
+
+  mail.deliver!
+
 end
 
 ## - start here -
