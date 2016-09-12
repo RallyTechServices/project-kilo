@@ -31,7 +31,8 @@ def check_usage()
     opts.separator ""
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
-    opts.on('-d', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
+    opts.on('-s', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
+    opts.on('-e', '--end_date end_date', String, 'Enter end date, if not given yesterday is taken as end date') { |o| @options.end_date = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
 
     #{ |o| @options.mode = o }
@@ -101,8 +102,20 @@ end
 #
 
 def get_time_values
-  end_date = Date.today - 1 # yesterday 
+  if(@options.end_date.nil?)
+    end_date = Date.today - 1 # yesterday 
+  else
+    begin
+      end_date = Date.parse(@options.end_date)
+    rescue ArgumentError
+      puts "InvalidArgument: Incorrect end date format. Please enter date as YYYY-MM-DD"
+      puts 
+      exit 1
+    end
+  end
+
   puts "start date given in argument #{@options.start_date}"
+
   if(@options.start_date.nil?)
     start_date = date_of_prev("Monday")
   else
@@ -113,7 +126,7 @@ def get_time_values
       puts 
       exit 1
     end
-   end
+  end
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
   #query.fetch = true
@@ -383,7 +396,7 @@ end
 
 def export_csv(rows)
   csv = get_csv(rows,false)
-  filename = "export.csv"
+  filename = "export_#{@time_now}.csv"
   
   puts "Writing to #{filename}"  
   CSV.open("#{filename}", "wb") do |csv_file|
@@ -395,8 +408,7 @@ end
 
 def errors_csv(rows)
   csv = get_csv(rows,true)
-  filename = "SAPErrors.csv"
-  
+  filename = "SAPErrors_#{@time_now}.csv"
   puts "Writing to #{filename}"
   CSV.open("#{filename}", "wb") do |csv_file|
     csv.each do |csv_row|
@@ -404,14 +416,22 @@ def errors_csv(rows)
     end
   end
   
+
   if (@options.export_mode == "email")
-    send_email(filename, csv)
+
+    csv_string = CSV.generate do |csv_str|
+      csv.each do |csv_row|
+        csv_str << csv_row
+      end
+    end
+
+    send_email(filename, csv_string)
   end
 end
 
 
 def sap_headers_xml(rows)
-  filename = "E1CATS_INSERT.xml.txt"
+  filename = "E1CATS_INSERT_#{@time_now}.xml"
   
   puts "Writing to #{filename}"  
 
@@ -436,7 +456,7 @@ end
 
 
 def sap_data_xml(rows)
-  filename = "E1BPCATS1.xml.txt"
+  filename = "E1BPCATS1_#{@time_now}.xml"
   
   puts "Writing to #{filename}"  
 
@@ -468,7 +488,7 @@ def sap_data_xml(rows)
 end
 
 def sap_trailer_xml(rows)
-  filename = "E1BPCATS8.xml.txt"
+  filename = "E1BPCATS8_#{@time_now}.xml"
   
   puts "Writing to #{filename}"  
 
@@ -523,7 +543,7 @@ def send_email(filename,data)
 end
 
 ## - start here -
-
+@time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
 check_usage()
 connect_to_rally()
 pi_types = get_pi_types()

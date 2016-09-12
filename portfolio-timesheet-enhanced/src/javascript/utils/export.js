@@ -4,7 +4,7 @@ Ext.define("GridExporter", {
 
     inheritableStatics: {
         XmlFileHeader: '<?xml version="1.0"?>',
-        XmlFileExtension: '.xml.txt'
+        XmlFileExtension: '.xml'
     },
 
     _downloadFiles: function(files) {
