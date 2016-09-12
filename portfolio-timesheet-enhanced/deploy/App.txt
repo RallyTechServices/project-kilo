@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Sep 06 2016 15:10:40 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Sep 06 2016 16:37:01 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Sep 06 2016 15:10:40 GMT-0400 (EDT)";
+        var APP_BUILD_DATE = "Tue Sep 06 2016 16:37:01 GMT-0400 (EDT)";
         var STORY    = "US8846";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 105540278320;
+        var CHECKSUM = 105682617154;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -1823,6 +1823,8 @@ Ext.define('PTApp', {
             header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
+            stateful: true,
+            stateId: 'tsGrid1',
             features: [{
                 ftype: 'grouping',
                 showSummaryRow: true,

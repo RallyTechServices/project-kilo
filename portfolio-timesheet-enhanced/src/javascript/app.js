@@ -371,6 +371,8 @@ Ext.define('PTApp', {
             header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
+            stateful: true,
+            stateId: 'tsGrid1',
             features: [{
                 ftype: 'grouping',
                 showSummaryRow: true,
