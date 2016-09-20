@@ -1,7 +1,8 @@
 auth.rb
-export.csv
-SAPErrors.csv
-E1CATS_INSERT.xml.txt
-E1BPCATS1.xml.txt
-E1BPCATS8.xml.txt
+export*.csv
+SAPErrors*.csv
+E1CATS_INSERT*.xml
+E1BPCATS1*.xml
+E1BPCATS8*.xml
 temp.fil
+.DS_Store

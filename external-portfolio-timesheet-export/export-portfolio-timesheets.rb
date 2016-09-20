@@ -19,6 +19,7 @@ require "date"
 #       - Ruby version 1.9.3 or later.
 #
 # ------------------------------------------------------------------------------
+# c_DefaultSAPSubOperation
 
 
 def check_usage()
@@ -99,7 +100,7 @@ end
 
 #
 # (((DateVal >= "2015-09-12T00:00:00-04:00") AND (DateVal <= "2016-09-11T00:00:00-04:00")) AND (Hours > 0))
-#
+#((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != "No"))
 
 def get_time_values
   if(@options.end_date.nil?)
@@ -116,6 +117,8 @@ def get_time_values
 
   puts "start date given in argument #{@options.start_date}"
 
+  integration = "No"
+
   if(@options.start_date.nil?)
     start_date = date_of_prev("Monday")
   else
@@ -130,12 +133,12 @@ def get_time_values
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
   #query.fetch = true
-  query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID" #true
+  query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
 
   query.limit = 999999
   query.page_size = 2000
   query.project = nil
-  query.query_string = "(((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0))"
+  query.query_string = "((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != #{integration}))"
   @rally.find(query)
 end
 
@@ -144,9 +147,16 @@ def add_time_entry_to_time_values(time_values)
   time_values.each do |time_value|
     time_entry_item = time_value["TimeEntryItem"]
     time_entry_item.read
+    time_entry_project = time_entry_item["Project"]
+    time_entry_project.read
+    #TODO check if owner is not null and handle
+    time_entry_project_owner = time_entry_project["Owner"]
+    time_entry_project_owner.read
     rows.push({
       "TimeEntryValueObject" => time_value,
-      "TimeEntryItemObject" => time_entry_item
+      "TimeEntryItemObject" => time_entry_item,
+      "TimeEntryProjectOwnerObject" => time_entry_project_owner,
+      "TimeEntryProjectObject" => time_entry_project
     })
   end
   
@@ -261,6 +271,25 @@ def get_field_value(row, field)
   # return value
 end
    
+def get_so_field_value(row, field)
+  value = nil
+  if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution"
+    value = row["UserObject"]["c_DefaultSAPSubOperation"]
+  else
+    value = row["Artifact"][field]
+  end
+
+  return value
+  # row["Artifact"].each do |artifact|
+  #   puts artifact
+  #   puts "\n"
+  #   if value.nil? 
+  #     value = artifact[field]
+  #   end
+  # end
+  # return value
+end
+
 def get_type_field_value(record, pi_type, field)
   found_item = nil
   type_path = pi_type['TypePath'].downcase
@@ -281,26 +310,31 @@ end
 def convert_to_output_array(rows,pi_types)
   output_rows = []
   rows.each do |row|
-    output_rows.push({
-      "UserName" => row["UserObject"]["UserName"],
-      "TaskDisplayString"  => row["TimeEntryItemObject"]["TaskDisplayString"],
-      "ProjectDisplayString"  => row["TimeEntryItemObject"]["ProjectDisplayString"],
-      "WorkProductDisplayString" => row["TimeEntryItemObject"]["WorkProductDisplayString"],
-      "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
-      "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
-      'test'  => get_field_value(row, 'FormattedID'),
-      'c_SAPProject'  => get_field_value(row, 'c_SAPProject'),
-      'c_SAPNetwork'  => get_field_value(row, 'c_SAPNetwork'),
-      'c_SAPOperation'  => get_field_value(row, 'c_SAPOperation'),
-      'c_SAPSubOperation'  => get_field_value(row, 'c_SAPSubOperation'),
-      'EpicID' => get_type_field_value(row, pi_types[1], "FormattedID"),
-      'EpicName' => get_type_field_value(row, pi_types[1], "Name"),
-      'Hours' => row["TimeEntryValueObject"]['Hours'],
-      'ObjectID' => row["TimeEntryValueObject"]["ObjectID"],
-      'Date' => Date.parse(row["TimeEntryValueObject"]['DateVal']).strftime("%Y%m%d"),
-      'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
-      'Hierarchy' => row["Hierarchy"]
-    })
+    if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No"
+      output_rows.push({
+        "UserName" => row["UserObject"]["UserName"],
+        "TaskDisplayString"  => row["TimeEntryItemObject"]["TaskDisplayString"],
+        "ProjectDisplayString"  => row["TimeEntryItemObject"]["ProjectDisplayString"],
+        "WorkProductDisplayString" => row["TimeEntryItemObject"]["WorkProductDisplayString"],
+        "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
+        "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
+        'test'  => get_field_value(row, 'FormattedID'),
+        'c_SAPProject'  => get_field_value(row, 'c_SAPProject'),
+        'c_SAPNetwork'  => get_field_value(row, 'c_SAPNetwork'),
+        'c_SAPOperation'  => get_field_value(row, 'c_SAPOperation'),
+        'c_SAPSubOperation'  => get_so_field_value(row, 'c_SAPSubOperation'),
+        'EpicID' => get_type_field_value(row, pi_types[1], "FormattedID"),
+        'EpicName' => get_type_field_value(row, pi_types[1], "Name"),
+        'Hours' => row["TimeEntryValueObject"]['Hours'],
+        'ObjectID' => row["TimeEntryValueObject"]["ObjectID"],
+        'Date' => Date.parse(row["TimeEntryValueObject"]['DateVal']).strftime("%Y%m%d"),
+        'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
+        'Hierarchy' => row["Hierarchy"],
+        'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"]["EmailAddress"],
+        'KMDTimeregistrationIntegration' => row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"],
+        'DefaultSAPSubOperation' => row["UserObject"]["c_DefaultSAPSubOperation"]
+      })
+    end
   end
   return output_rows
 end
@@ -407,6 +441,7 @@ def export_csv(rows)
 end
 
 def errors_csv(rows)
+  #puts rows
   csv = get_csv(rows,true)
   filename = "SAPErrors_#{@time_now}.csv"
   puts "Writing to #{filename}"
@@ -425,7 +460,7 @@ def errors_csv(rows)
       end
     end
 
-    send_email(filename, csv_string)
+    send_email(filename, csv_string,$to_address)
   end
 end
 
@@ -524,15 +559,15 @@ def date_of_prev(day)
   date - delta
 end
 
-def send_email(filename,data)
-
+def send_email(filename,data,to_address)
+  #puts data
   Mail.defaults do
     delivery_method :smtp, address: $smtp_host, port: $smtp_port
   end
 
   mail = Mail.new do
     from     $from_address
-    to       $to_address
+    to       to_address
     subject  $email_subject
     body     $email_body
     add_file :filename => filename, :content => data

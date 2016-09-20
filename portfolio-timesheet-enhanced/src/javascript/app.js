@@ -230,10 +230,19 @@ Ext.define('PTApp', {
         });
 
         //console.log(filter);
+        //check if  c_KMDTimeregistrationIntegration on project is not "No".
+
+        filter.push({
+            property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
+            operator: '!=',
+            value: 'No'
+        });
+
 
         Ext.create('Rally.data.wsapi.Store', {
             model: "TimeEntryValue",
-            fetch: true,
+            //fetch: true,
+            fetch: ["Name","FormattedID","TimeEntryItem","TimeEntryValueObject","TimeEntryItemObject","User","UserObject","WorkProduct","Requirement","Parent","PortfolioItem","Task","Artifact","Hierarchy","TypePath","_type","UserObject","UserName","TaskDisplayString","ProjectDisplayString","WorkProductDisplayString","c_SAPNetwork","c_SAPProject","c_SAPSubOperation","c_SAPOperation","Hours","ObjectID","DateVal","c_KMDEmployeeID","Project","c_KMDTimeregistrationIntegration","Owner","EmailAddress","c_DefaultSAPSubOperation"],
             filters: filter,
             limit: 'Infinity'
         }).load({
@@ -340,7 +349,6 @@ Ext.define('PTApp', {
 
         // convert records into a json data structure
         var data = _.map(records, function(r) {
-            
             return {
                 "UserName": r.get("UserObject").get("UserName"),
                 "TaskDisplayString": r.get("TimeEntryItemObject").get("TaskDisplayString"),
@@ -351,14 +359,16 @@ Ext.define('PTApp', {
                 'c_SAPProject': app.getFieldValue(r, 'c_SAPProject'),
                 'c_SAPNetwork': app.getFieldValue(r, 'c_SAPNetwork'),
                 'c_SAPOperation': app.getFieldValue(r, 'c_SAPOperation'),
-                'c_SAPSubOperation': app.getFieldValue(r, 'c_SAPSubOperation'),
+                'c_SAPSubOperation': app.getSubOperationValue(r),
                 'EpicID': app.getTypeFieldValue(r, app.piTypes[1], "FormattedID"),
                 'EpicName': app.getTypeFieldValue(r, app.piTypes[1], "Name"),
                 'Hours': r.get('Hours'),
                 'ObjectID': r.get("ObjectID"),
                 'Date': Ext.Date.format(r.get("DateVal"), "Ymd"),
                 'c_KMDEmployeeID': r.get("UserObject").get("c_KMDEmployeeID"),
-                'Hierarchy': r.get("Hierarchy")
+                'Hierarchy': r.get("Hierarchy"),
+                'KMDTimeregistrationIntegration': r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration"),
+                'DefaultSAPSubOperation': r.get("UserObject").get("c_DefaultSAPSubOperation")
             };
         });
 
@@ -433,6 +443,16 @@ Ext.define('PTApp', {
 
     },
 
+    getSubOperationValue: function(r){
+        var value = '';
+        if(r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration")=="Yes with suboperation substitution")   {
+            value = r.get("UserObject").get("c_DefaultSAPSubOperation");
+        } else {
+            value = app.getFieldValue(r, 'c_SAPSubOperation');
+        }  
+        return value;
+    },
+
     // creates a url link for the column based on the formatted id in the column
     renderLink: function(textValue, record) {
         
@@ -453,6 +473,14 @@ Ext.define('PTApp', {
 
             success: function(items) {
                 app.setValues(values, items, "TimeEntryItemObject");
+
+                // project
+                app.readProjects(items).then({
+                    success: function(projects) {
+                        app.setValues(values, projects, "TimeEntryProjectObject");
+                    }
+                });
+
                 // users
                 app.readUsers(items).then({
                     success: function(users) {
@@ -610,6 +638,25 @@ Ext.define('PTApp', {
             } else {
                 // app.readObject('User',userRef).then({
                 app.readObject(userRef).then({
+                    success: function(obj) {
+                        deferred.resolve(obj);
+                    }
+                });
+            }
+            return deferred.promise;
+        });
+        return Deft.Promise.all(promises);
+    },
+
+    readProjects: function(items) {
+        var promises = _.map(items, function(item) {
+            var deferred = Ext.create('Deft.Deferred');
+            var projectRef = item.get("Project");
+            if (_.isUndefined(projectRef) || _.isNull(projectRef)) {
+                deferred.resolve(null);
+            } else {
+                // app.readObject('User',userRef).then({
+                app.readObject(projectRef).then({
                     success: function(obj) {
                         deferred.resolve(obj);
                     }
