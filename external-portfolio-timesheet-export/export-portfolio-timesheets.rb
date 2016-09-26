@@ -400,13 +400,19 @@ def get_columns()
           }, {
               'text' => 'Employee ID',
               'dataIndex' => 'c_KMDEmployeeID'
+          },
+          {
+              'text' => 'Project Owner Email',
+              'dataIndex' => 'ProjectOwnerEmail'
           }];
 end
 
 def get_header(columns)
   heads = []
   columns.each do |column|
-    heads.push(escape_text_for_csv(column['text']))
+    if column['dataIndex'] != "ProjectOwnerEmail"
+      heads.push(escape_text_for_csv(column['text']))
+    end
   end
   return heads
 end
@@ -419,7 +425,9 @@ def get_csv(rows,error)
       row_csv_array = []
       columns.each do |column|
         field = column['dataIndex']
-        row_csv_array.push(escape_text_for_csv(row[field]))
+        if field != "ProjectOwnerEmail"
+          row_csv_array.push(escape_text_for_csv(row[field]))
+        end
       end
       csv_array.push(row_csv_array)
     end
@@ -427,6 +435,33 @@ def get_csv(rows,error)
   
   return csv_array
 end
+
+
+#create a map of csv_array for each owner email address
+# csv_array = {"1st@email.address" => [[get_header(columns)],[row_values]],"2nd@email.address" => [[get_header(columns)],[row_values]]}
+def get_split_csv(rows,error)
+  columns = get_columns()
+  csv_array = {} #[get_header(columns)]
+  rows.each do |row|
+    if !error || !is_valid(row)
+      if csv_array[row["ProjectOwnerEmail"]].nil?
+        csv_array[row["ProjectOwnerEmail"]] = [get_header(columns)]
+      else
+        row_csv_array = []
+        columns.each do |column|
+          field = column['dataIndex']
+          if field != "ProjectOwnerEmail"
+            row_csv_array.push(escape_text_for_csv(row[field]))
+          end
+        end
+        csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
+      end
+    end
+  end
+  
+  return csv_array
+end
+
 
 def export_csv(rows)
   csv = get_csv(rows,false)
@@ -453,14 +488,7 @@ def errors_csv(rows)
   
 
   if (@options.export_mode == "email")
-
-    csv_string = CSV.generate do |csv_str|
-      csv.each do |csv_row|
-        csv_str << csv_row
-      end
-    end
-
-    send_email(filename, csv_string,$to_address)
+    send_email(filename, rows,$to_address)
   end
 end
 
@@ -559,21 +587,34 @@ def date_of_prev(day)
   date - delta
 end
 
-def send_email(filename,data,to_address)
-  #puts data
+def send_email(filename,rows,to_address)
   Mail.defaults do
     delivery_method :smtp, address: $smtp_host, port: $smtp_port
   end
 
-  mail = Mail.new do
-    from     $from_address
-    to       to_address
-    subject  $email_subject
-    body     $email_body
-    add_file :filename => filename, :content => data
+  csv = get_split_csv(rows,true)
+  #puts csv
+
+  csv.each do |key, array|
+    csv_string = CSV.generate do |csv_str|
+      array.each do |csv_row|
+        csv_str << csv_row
+      end
+    end
+    #puts data
+
+    mail = Mail.new do
+      from     $from_address
+      to       key
+      subject  $email_subject
+      body     $email_body
+      add_file :filename => filename, :content => csv_string
+    end
+
+    mail.deliver!  
   end
 
-  mail.deliver!
+
 
 end
 
