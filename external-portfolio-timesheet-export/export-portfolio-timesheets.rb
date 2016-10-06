@@ -132,8 +132,8 @@ def get_time_values
   end
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
-  #query.fetch = true
-  query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
+  query.fetch = true
+  #query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
 
   query.limit = 999999
   query.page_size = 2000
@@ -212,6 +212,8 @@ def get_parent_field(artifact)
 end
 
 def get_parents(item, hierarchy=[])
+  hierarchy.push(item)
+
   parent_field = get_parent_field(item)
 
 #  puts "Item: #{item['FormattedID']}"
@@ -260,15 +262,14 @@ end
 # get the field value at the lowest level that has a value in that field
 def get_field_value(row, field)
   value = nil
-  return row["Artifact"][field]
-  # row["Artifact"].each do |artifact|
-  #   puts artifact
-  #   puts "\n"
-  #   if value.nil? 
-  #     value = artifact[field]
-  #   end
-  # end
-  # return value
+
+  row["Hierarchy"].each do |artifact|
+    if value.nil? 
+      value = artifact[field]
+    end
+  end
+  puts "\n"
+  return value
 end
    
 def get_so_field_value(row, field)
@@ -276,18 +277,15 @@ def get_so_field_value(row, field)
   if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution"
     value = row["UserObject"]["c_DefaultSAPSubOperation"]
   else
-    value = row["Artifact"][field]
+    row["Hierarchy"].each do |artifact|
+      if value.nil? 
+        value = artifact[field]
+      end
+    end    
   end
 
   return value
-  # row["Artifact"].each do |artifact|
-  #   puts artifact
-  #   puts "\n"
-  #   if value.nil? 
-  #     value = artifact[field]
-  #   end
-  # end
-  # return value
+
 end
 
 def get_type_field_value(record, pi_type, field)
@@ -310,7 +308,7 @@ end
 def convert_to_output_array(rows,pi_types)
   output_rows = []
   rows.each do |row|
-    if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No"
+    if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No" && row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "")
       output_rows.push({
         "UserName" => row["UserObject"]["UserName"],
         "TaskDisplayString"  => row["TimeEntryItemObject"]["TaskDisplayString"],
@@ -487,8 +485,8 @@ def errors_csv(rows)
   end
   
 
-  if (@options.export_mode == "email")
-    send_email(filename, rows,$to_address)
+if (@options.export_mode == "email")
+    send_email(filename, rows,$to_address, @time_now)
   end
 end
 
@@ -538,7 +536,7 @@ def sap_data_xml(rows)
             xml.CATSHOURS row['Hours']
             xml.UNIT "H"
             xml.SHORTTEXT row['TaskDisplayString'] || row['WorkProductDisplayString']
-            xml.EXTAPPLICATION "RALLY"
+            xml.EXTAPPLICATION $extapplication ? $extapplication : "RALLY"
             xml.LONGTEXT "X"
           }
         end
@@ -587,7 +585,7 @@ def date_of_prev(day)
   date - delta
 end
 
-def send_email(filename,rows,to_address)
+def send_email(filename,rows,to_address,time_now)
   Mail.defaults do
     delivery_method :smtp, address: $smtp_host, port: $smtp_port
   end
@@ -606,15 +604,13 @@ def send_email(filename,rows,to_address)
     mail = Mail.new do
       from     $from_address
       to       key
-      subject  $email_subject
-      body     $email_body
+      subject  $email_subject + ": " + time_now
+      body     File.read('email-template.txt')#$email_body
       add_file :filename => filename, :content => csv_string
     end
 
     mail.deliver!  
   end
-
-
 
 end
 
@@ -633,10 +629,17 @@ rows = add_artifact_to_time_values(rows)
 
 rows = convert_to_output_array(rows,pi_types)
 
-export_csv(rows)
-errors_csv(rows)
-sap_headers_xml(rows)
-sap_data_xml(rows)
-sap_trailer_xml(rows)
+if(@export_mode == "check_sap_keys")
+  #send email of missing and incorrect sap keys
+
+  
+
+else
+  export_csv(rows)
+  errors_csv(rows)
+  sap_headers_xml(rows)
+  sap_data_xml(rows)
+  sap_trailer_xml(rows)
+end
 
 puts "Done!"
