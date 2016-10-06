@@ -1,0 +1,15 @@
+Hi,
+ 
+You have received this email with KMD Rally time registration errors because you are a project owner.
+ 
+Some of the time registrations on your project this week are not correct and must be fixed before importing in to SAP.
+ 
+The error reasons can be;
+- SAP information is missing (SAP Project, SAP Network, SAP Operation, Employee number)
+- Entered SAP information is not valid
+ 
+For more information about KMD Rally time registrations see here;
+User Guide: “I need to find the correct URL”
+KMD Rally Community: “URL”
+ 
+KMD Rally Team
