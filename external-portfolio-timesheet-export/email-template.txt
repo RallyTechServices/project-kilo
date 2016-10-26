@@ -1,4 +1,4 @@
-Hi,
+<h1>Hi</h1>,
  
 You have received this email with KMD Rally time registration errors because you are a project owner.
  
