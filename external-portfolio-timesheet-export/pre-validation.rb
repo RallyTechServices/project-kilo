@@ -9,11 +9,11 @@ require "date"
 #!/usr/bin/env ruby
 # ------------------------------------------------------------------------------
 # SCRIPT:
-#       export-portfolio-timesheets.rb
+#       pre-validation.rb
 #
 # PURPOSE:
-#       Used to export portfolio time sheets weekly/ monthly and email as necessary.
-#       type export-portfolio-timesheets.rb -h to get help.
+#       Used to pre validate user stories/ tasks to see if they have the correct SAP info.
+#       type pre-validation.rb -h to get help.
 #
 # PREREQUISITES:
 #       - Ruby version 1.9.3 or later.
@@ -27,7 +27,7 @@ def check_usage()
 
   @options = OpenStruct.new
   optparse = OptionParser.new do |opts|
-    opts.banner = "Usage: export-portfolio-timesheets.rb [options]"
+    opts.banner = "Usage: pre-validation.rb [options]"
     opts.separator ""
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
@@ -101,10 +101,12 @@ end
 # (((DateVal >= "2015-09-12T00:00:00-04:00") AND (DateVal <= "2016-09-11T00:00:00-04:00")) AND (Hours > 0))
 #((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != "No"))
 
-def get_time_values
+#get all Stories that doesnt have tasks and all the tasks
+
+def get_time_values(model)
+  now = Date.today
   if(@options.end_date.nil?)
     end_date = Date.today - 1 # yesterday 
-    end_date.strftime("%F")
   else
     begin
       end_date = Date.parse(@options.end_date)
@@ -115,7 +117,7 @@ def get_time_values
     end
   end
 
-
+  puts "start date given in argument #{@options.start_date}"
 
   integration = "No"
 
@@ -130,56 +132,58 @@ def get_time_values
       exit 1
     end
   end
-
-  puts "start date  #{start_date}"
-  puts "end date  #{end_date}"
-
   query = RallyAPI::RallyQuery.new
-  query.type = "TimeEntryValue"
+  query.type = model
   query.fetch = true
   #query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
 
   query.limit = 999999
   query.page_size = 2000
   query.project = nil
-  query.query_string = "((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != #{integration}))"
+  query.query_string = "(((Iteration.StartDate <= #{now}) AND (Iteration.EndDate >= #{now})) AND (Project.c_KMDTimeregistrationIntegration != #{integration}))"
   @rally.find(query)
 end
 
-def add_time_entry_to_time_values(time_values)
+def add_time_entry_to_time_values(task_values,us_values)
   rows = []
-  time_values.each do |time_value|
-    time_entry_item = time_value["TimeEntryItem"]
-    time_entry_item.read
-    time_entry_project = time_entry_item["Project"]
+  task_values.each do |time_value|
+    # time_entry_item = time_value["TimeEntryItem"]
+    # time_entry_item.read
+    time_entry_project = time_value["Project"]
     time_entry_project.read
+    time_entry_user_object =time_value["Owner"] 
+    time_entry_user_object.read
     #TODO check if owner is not null and handle
     time_entry_project_owner = time_entry_project["Owner"]
     time_entry_project_owner.read
+
     rows.push({
       "TimeEntryValueObject" => time_value,
-      "TimeEntryItemObject" => time_entry_item,
+      "UserObject" => time_entry_user_object,
       "TimeEntryProjectOwnerObject" => time_entry_project_owner,
       "TimeEntryProjectObject" => time_entry_project
     })
   end
   
-  return rows
-end
+  us_values.each do |time_value|
+    # time_entry_item = time_value["TimeEntryItem"]
+    # time_entry_item.read
+    time_entry_project = time_value["Project"]
+    time_entry_project.read
+    time_entry_user_object =time_value["Owner"] 
+    time_entry_user_object.read
+    #TODO check if owner is not null and handle
+    time_entry_project_owner = time_entry_project["Owner"]
+    time_entry_project_owner.read
 
-def add_users_to_time_values(rows)
-  rows.each do |row|
-    time_value = row["TimeEntryItemObject"]
-    user = time_value["User"]
-    begin
-      user.read
-    rescue Exception => ex
-      "    Warning: #{ex.message}"
-      "    Possible that this user no longer exists #{user._refObjectName}/#{user.ObjectID}"
-    end
-    row["UserObject"] = user
+    rows.push({
+      "TimeEntryValueObject" => time_value,
+      "UserObject" => time_entry_user_object,
+      "TimeEntryProjectOwnerObject" => time_entry_project_owner,
+      "TimeEntryProjectObject" => time_entry_project
+    })
   end
-  
+
   return rows
 end
 
@@ -240,8 +244,8 @@ def add_artifact_to_time_values(rows)
   # re do rows so we can remove if it's not a valid time entry
   updated_rows = []
   rows.each do |row|
-    time_value = row["TimeEntryItemObject"]
-    artifact = time_value["Task"] || time_value["WorkProduct"]
+    #time_value = row["TimeEntryValueObject"]
+    artifact =  row["TimeEntryValueObject"]
     if artifact.nil?
       puts "  Warning: This is likely a project time entry."
       next
@@ -312,12 +316,10 @@ end
 def convert_to_output_array(rows,pi_types)
   output_rows = []
   rows.each do |row|
-    if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution" || row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes")
+    if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No" && row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "")
       output_rows.push({
         "UserName" => row["UserObject"]["UserName"],
-        "TaskDisplayString"  => row["TimeEntryItemObject"]["TaskDisplayString"],
-        "ProjectDisplayString"  => row["TimeEntryItemObject"]["ProjectDisplayString"],
-        "WorkProductDisplayString" => row["TimeEntryItemObject"]["WorkProductDisplayString"],
+        "ProjectName"  => row["TimeEntryProjectObject"]["Name"],
         "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
         "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
         'test'  => get_field_value(row, 'FormattedID'),
@@ -327,9 +329,10 @@ def convert_to_output_array(rows,pi_types)
         'c_SAPSubOperation'  => get_so_field_value(row, 'c_SAPSubOperation'),
         'EpicID' => get_type_field_value(row, pi_types[1], "FormattedID"),
         'EpicName' => get_type_field_value(row, pi_types[1], "Name"),
-        'Hours' => row["TimeEntryValueObject"]['Hours'],
         'ObjectID' => row["TimeEntryValueObject"]["ObjectID"],
-        'Date' => Date.parse(row["TimeEntryValueObject"]['DateVal']).strftime("%Y%m%d"),
+        'FormattedID' => row["TimeEntryValueObject"]["FormattedID"],
+        'Name' => row["TimeEntryValueObject"]["Name"],
+        'Date' => Date.parse(row["TimeEntryValueObject"]['CreationDate']).strftime("%Y%m%d"),
         'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
         'Hierarchy' => row["Hierarchy"],
         'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"]["EmailAddress"],
@@ -354,59 +357,36 @@ def escape_text_for_csv(text)
 end
 
 def get_columns()
-  return [{
-              'text' => 'User',
-              'dataIndex' => 'UserName'
-          }, {
-              'text' => 'Task',
-              'dataIndex' => 'TaskDisplayString'
-          }, {
-              'text' => 'Project',
-              'dataIndex' => 'ProjectDisplayString'
-          }, {
-              'text' => 'Work Product',
-              'dataIndex' => 'WorkProductDisplayString'
-          }, {
-              'text' => 'Feature ID',
-              'dataIndex' => 'FeatureID'
-          }, {
-              'text' => 'Feature Title',
-              'dataIndex' => 'FeatureName'
-          }, {
-              'text' => 'SAP project',
-              'dataIndex' => 'c_SAPProject'
-          },{
-              'text' => 'SAP Network',
-              'dataIndex' => 'c_SAPNetwork'
-          }, {
-              'text' => 'SAP Operation',
-              'dataIndex' => 'c_SAPOperation'
-          }, {
-              'text' => 'SAP Sub Operation',
-              'dataIndex' => 'c_SAPSubOperation'
-          }, {
-              'text' => 'Epic ID',
-              'dataIndex' => 'EpicID'
-          }, {
-              'text' => 'Epic Title',
-              'dataIndex' => 'EpicName'
-          }, {
-              'text' => 'Hours Entered',
-              'dataIndex' => 'Hours'
-          }, {
-              'text' => 'Unique ID',
-              'dataIndex' => 'ObjectID'
-          }, {
-              'text' => 'Date',
-              'dataIndex' => 'Date'
-          }, {
-              'text' => 'Employee ID',
-              'dataIndex' => 'c_KMDEmployeeID'
+  return [
+          {
+              'text' => 'Formatted ID',
+              'dataIndex' => 'FormattedID'
+          },     
+          {
+              'text' => 'Name',
+              'dataIndex' => 'Name'
           },
           {
-              'text' => 'Project Owner Email',
-              'dataIndex' => 'ProjectOwnerEmail'
-          }];
+              'text' => 'SAP project',
+              'dataIndex' => 'c_SAPProject'
+          },
+          {
+              'text' => 'SAP Network',
+              'dataIndex' => 'c_SAPNetwork'
+          }, 
+          {
+              'text' => 'SAP Operation',
+              'dataIndex' => 'c_SAPOperation'
+          }, 
+          {
+              'text' => 'SAP Sub Operation',
+              'dataIndex' => 'c_SAPSubOperation'
+          }, 
+          {
+              'text' => 'Project',
+              'dataIndex' => 'ProjectName'
+          },          
+          ];
 end
 
 def get_header(columns)
@@ -416,6 +396,7 @@ def get_header(columns)
       heads.push(escape_text_for_csv(column['text']))
     end
   end
+  heads.push('Reason')
   return heads
 end
 
@@ -423,7 +404,8 @@ def get_csv(rows,error)
   columns = get_columns()
   csv_array = [get_header(columns)]
   rows.each do |row|
-    if !error || !is_valid(row)
+    reason = is_valid(row)
+    if !error ||  reason != "valid"
       row_csv_array = []
       columns.each do |column|
         field = column['dataIndex']
@@ -431,6 +413,7 @@ def get_csv(rows,error)
           row_csv_array.push(escape_text_for_csv(row[field]))
         end
       end
+      row_csv_array.push(reason)
       csv_array.push(row_csv_array)
     end
   end
@@ -445,7 +428,8 @@ def get_split_csv(rows,error)
   columns = get_columns()
   csv_array = {} #[get_header(columns)]
   rows.each do |row|
-    if !error || !is_valid(row)
+    reason = is_valid(row)
+    if !error ||  reason != "valid"
       if csv_array[row["ProjectOwnerEmail"]].nil?
         csv_array[row["ProjectOwnerEmail"]] = [get_header(columns)]
       else
@@ -456,25 +440,13 @@ def get_split_csv(rows,error)
             row_csv_array.push(escape_text_for_csv(row[field]))
           end
         end
+        row_csv_array.push(reason)
         csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
       end
     end
   end
   
   return csv_array
-end
-
-
-def export_csv(rows)
-  csv = get_csv(rows,false)
-  filename = "export_#{@time_now}.csv"
-  
-  puts "Writing to #{filename}"  
-  CSV.open("#{filename}", "wb") do |csv_file|
-    csv.each do |csv_row|
-      csv_file << csv_row
-    end
-  end
 end
 
 def errors_csv(rows)
@@ -487,100 +459,26 @@ def errors_csv(rows)
       csv_file << csv_row
     end
   end
-  
 
-if (@options.export_mode == "email")
+  if (@options.export_mode == "email")
     send_email(filename, rows,$to_address, @time_now)
   end
 end
 
-
-def sap_headers_xml(rows)
-  filename = "E1CATS_INSERT_#{@time_now}.xml"
-  
-  puts "Writing to #{filename}"  
-
-
-  builder = Nokogiri::XML::Builder.new do |xml|
-    xml.E1CATS_INSERT {
-      rows.each do |row|
-        if is_valid(row)  
-          xml.Datarow {
-            xml.GUID row['ObjectID']
-            xml.PROFILE row['c_KMDEmployeeID']
-            xml.TEXT_FORMAT_IMP  "ITF"
-          }
-        end
-      end
-    }
-  end
-
-  File.write(filename, builder.to_xml)
-
-end
-
-
-def sap_data_xml(rows)
-  filename = "E1BPCATS1_#{@time_now}.xml"
-  
-  puts "Writing to #{filename}"  
-
-  builder = Nokogiri::XML::Builder.new do |xml|
-    xml.E1CATS_INSERT {
-      rows.each do |row|
-        if is_valid(row)   
-          xml.Datarow {
-            xml.GUID row['ObjectID']
-            xml.WORKDATE row['Date']
-            xml.EMPLOYEENUMBER  row['c_KMDEmployeeID']
-            xml.ACTTYPE "1"
-            xml.NETWORK row['c_SAPNetwork']
-            xml.ACTIVITY row['c_SAPOperation']
-            xml.SUB_ACTIVITY row['c_SAPSubOperation']
-            xml.CATSHOURS row['Hours']
-            xml.UNIT "H"
-            xml.SHORTTEXT row['TaskDisplayString'] || row['WorkProductDisplayString']
-            xml.EXTAPPLICATION $extapplication ? $extapplication : "RALLY"
-            xml.LONGTEXT "X"
-          }
-        end
-      end
-    }
-  end
-
-  File.write(filename, builder.to_xml)
-
-end
-
-def sap_trailer_xml(rows)
-  filename = "E1BPCATS8_#{@time_now}.xml"
-  
-  puts "Writing to #{filename}"  
-
-  builder = Nokogiri::XML::Builder.new do |xml|
-    xml.E1CATS_INSERT {
-      rows.each do |row|
-        if is_valid(row)     
-          xml.Datarow {
-            xml.GUID row['ObjectID']
-            xml.ROW "1"
-            xml.FORMAT_COL  "*"
-            xml.TEXT_LINE row['TaskDisplayString'] || row['WorkProductDisplayString']
-          }
-        end
-      end
-      }
-    end
-
-  File.write(filename, builder.to_xml)
-end
-
 def is_valid(row)
-  if (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
-    return true
+  valid = "valid"
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+    if !validate_keys(row)
+      valid = "Does not match SAP Keys file"
+    end 
   else
-    return false
+    valid = "One or more of the SAP Key is Missing"
   end
+  return valid
+end
+
+def validate_keys(row)
+  return  (@network.include? row['c_SAPNetwork']) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'])
 end
 
 def date_of_prev(day)
@@ -618,6 +516,24 @@ def send_email(filename,rows,to_address,time_now)
 
 end
 
+def load_keys_from_csv
+
+  file = "SAP-Keys.csv"
+
+  @project = []
+  @network = []
+  @operation = []
+  @sub_operation = []
+
+  CSV.foreach(file, :col_sep => ",", :return_headers => false) do |row|
+    @project << row[0]
+    @network << row[1]
+    @operation << row[2]
+    @sub_operation << row[3]
+  end
+
+end
+
 ## - start here -
 @time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
 check_usage()
@@ -625,25 +541,16 @@ connect_to_rally()
 pi_types = get_pi_types()
 
 puts "Fetching Time Values"
-time_values = get_time_values()
-rows = add_time_entry_to_time_values(time_values)
+task_values = get_time_values("task")
+us_values = get_time_values("hierarchicalrequirement")
 
-rows = add_users_to_time_values(rows)
+rows = add_time_entry_to_time_values(task_values,us_values)
 rows = add_artifact_to_time_values(rows)
+
+load_keys_from_csv()
 
 rows = convert_to_output_array(rows,pi_types)
 
-if(@export_mode == "check_sap_keys")
-  #send email of missing and incorrect sap keys
-
-  
-
-else
-  export_csv(rows)
-  errors_csv(rows)
-  sap_headers_xml(rows)
-  sap_data_xml(rows)
-  sap_trailer_xml(rows)
-end
+errors_csv(rows)
 
 puts "Done!"
