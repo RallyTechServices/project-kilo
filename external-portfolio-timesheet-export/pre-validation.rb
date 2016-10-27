@@ -147,15 +147,21 @@ end
 def add_time_entry_to_time_values(task_values,us_values)
   rows = []
   task_values.each do |time_value|
-    # time_entry_item = time_value["TimeEntryItem"]
-    # time_entry_item.read
+    
     time_entry_project = time_value["Project"]
-    time_entry_project.read
+    if !time_entry_project.nil?
+      time_entry_project.read
+    end    
+    
     time_entry_user_object =time_value["Owner"] 
-    time_entry_user_object.read
-    #TODO check if owner is not null and handle
+    if !time_entry_user_object.nil?
+      time_entry_user_object.read
+    end
+
     time_entry_project_owner = time_entry_project["Owner"]
-    time_entry_project_owner.read
+    if !time_entry_project_owner.nil?
+      time_entry_project_owner.read
+    end
 
     rows.push({
       "TimeEntryValueObject" => time_value,
@@ -166,15 +172,21 @@ def add_time_entry_to_time_values(task_values,us_values)
   end
   
   us_values.each do |time_value|
-    # time_entry_item = time_value["TimeEntryItem"]
-    # time_entry_item.read
+
     time_entry_project = time_value["Project"]
-    time_entry_project.read
+    if !time_entry_project.nil?
+      time_entry_project.read
+    end    
+    
     time_entry_user_object =time_value["Owner"] 
-    time_entry_user_object.read
-    #TODO check if owner is not null and handle
+    if !time_entry_user_object.nil?
+      time_entry_user_object.read
+    end
+
     time_entry_project_owner = time_entry_project["Owner"]
-    time_entry_project_owner.read
+    if !time_entry_project_owner.nil?
+      time_entry_project_owner.read
+    end
 
     rows.push({
       "TimeEntryValueObject" => time_value,
