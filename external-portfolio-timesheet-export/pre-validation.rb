@@ -288,14 +288,13 @@ def get_field_value(row, field)
       value = artifact[field]
     end
   end
-  puts "\n"
   return value
 end
    
 def get_so_field_value(row, field)
   value = nil
   if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution"
-    value = row["UserObject"]["c_DefaultSAPSubOperation"]
+    value = row["UserObject"] ? row["UserObject"]["c_DefaultSAPSubOperation"]:""
   else
     row["Hierarchy"].each do |artifact|
       if value.nil? 
@@ -330,7 +329,7 @@ def convert_to_output_array(rows,pi_types)
   rows.each do |row|
     if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No" && row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "")
       output_rows.push({
-        "UserName" => row["UserObject"]["UserName"],
+        "UserName" => row["UserObject"] ? row["UserObject"]["UserName"] :"",
         "ProjectName"  => row["TimeEntryProjectObject"]["Name"],
         "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
         "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
@@ -345,11 +344,11 @@ def convert_to_output_array(rows,pi_types)
         'FormattedID' => row["TimeEntryValueObject"]["FormattedID"],
         'Name' => row["TimeEntryValueObject"]["Name"],
         'Date' => Date.parse(row["TimeEntryValueObject"]['CreationDate']).strftime("%Y%m%d"),
-        'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
+        'c_KMDEmployeeID' => row["UserObject"] ? row["UserObject"]["c_KMDEmployeeID"]:"",
         'Hierarchy' => row["Hierarchy"],
-        'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"]["EmailAddress"],
+        'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"] ? row["TimeEntryProjectOwnerObject"]["EmailAddress"] : $to_address,
         'KMDTimeregistrationIntegration' => row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"],
-        'DefaultSAPSubOperation' => row["UserObject"]["c_DefaultSAPSubOperation"]
+        'DefaultSAPSubOperation' => row["UserObject"] ? row["UserObject"]["c_DefaultSAPSubOperation"]:""
       })
     end
   end
