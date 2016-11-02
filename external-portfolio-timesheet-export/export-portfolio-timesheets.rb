@@ -33,7 +33,7 @@ def check_usage()
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
     opts.on('-s', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
     opts.on('-e', '--end_date end_date', String, 'Enter end date, if not given yesterday is taken as end date') { |o| @options.end_date = o }
-    opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
+    opts.on('-m', '--mode export_mode', String, 'Enter export mode. email, pv or regular. Default is regular') { |o| @options.export_mode = o }
 
     #{ |o| @options.mode = o }
     opts.on("-h", "--help", "Prints this help") do
@@ -97,10 +97,6 @@ def get_pi_types
 end
 
 
-#
-# (((DateVal >= "2015-09-12T00:00:00-04:00") AND (DateVal <= "2016-09-11T00:00:00-04:00")) AND (Hours > 0))
-#((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != "No"))
-
 def get_time_values
   if(@options.end_date.nil?)
     end_date = Date.today - 1 # yesterday 
@@ -114,8 +110,6 @@ def get_time_values
       exit 1
     end
   end
-
-
 
   integration = "No"
 
@@ -137,7 +131,6 @@ def get_time_values
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
   query.fetch = true
-  #query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
 
   query.limit = 999999
   query.page_size = 2000
@@ -153,9 +146,12 @@ def add_time_entry_to_time_values(time_values)
     time_entry_item.read
     time_entry_project = time_entry_item["Project"]
     time_entry_project.read
-    #TODO check if owner is not null and handle
+    
     time_entry_project_owner = time_entry_project["Owner"]
-    time_entry_project_owner.read
+    if !time_entry_project_owner.nil?
+      time_entry_project_owner.read
+    end
+
     rows.push({
       "TimeEntryValueObject" => time_value,
       "TimeEntryItemObject" => time_entry_item,
@@ -272,7 +268,6 @@ def get_field_value(row, field)
       value = artifact[field]
     end
   end
-  puts "\n"
   return value
 end
    
@@ -332,7 +327,7 @@ def convert_to_output_array(rows,pi_types)
         'Date' => Date.parse(row["TimeEntryValueObject"]['DateVal']).strftime("%Y%m%d"),
         'c_KMDEmployeeID' => row["UserObject"]["c_KMDEmployeeID"],
         'Hierarchy' => row["Hierarchy"],
-        'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"]["EmailAddress"],
+        'ProjectOwnerEmail' => row["TimeEntryProjectOwnerObject"] ? row["TimeEntryProjectOwnerObject"]["EmailAddress"] : $to_address,
         'KMDTimeregistrationIntegration' => row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"],
         'DefaultSAPSubOperation' => row["UserObject"]["c_DefaultSAPSubOperation"]
       })
@@ -416,7 +411,48 @@ def get_header(columns)
       heads.push(escape_text_for_csv(column['text']))
     end
   end
+  if (@options.export_mode == "pv")
+      heads.push('Reason')
+  end
   return heads
+end
+
+
+def get_csv_from_keys(rows,error)
+  columns = get_columns()
+  csv_array = [get_header(columns)]
+  rows.each do |row|
+    reason = is_valid_by_keys(row)
+    if !error ||  reason != "valid"
+      row_csv_array = []
+      columns.each do |column|
+        field = column['dataIndex']
+        if field != "ProjectOwnerEmail"
+          row_csv_array.push(escape_text_for_csv(row[field]))
+        end
+      end
+      row_csv_array.push(reason)
+      csv_array.push(row_csv_array)
+    end
+  end
+  
+  return csv_array
+end
+
+def is_valid_by_keys(row)
+  valid = "valid"
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+    if !validate_keys(row)
+      valid = $reason_1
+    end 
+  else
+    valid = $reason_1
+  end
+  return valid
+end
+
+def validate_keys(row)
+  return  (@network.include? row['c_SAPNetwork']) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'])
 end
 
 def get_csv(rows,error)
@@ -448,19 +484,17 @@ def get_split_csv(rows,error)
     if !error || !is_valid(row)
       if csv_array[row["ProjectOwnerEmail"]].nil?
         csv_array[row["ProjectOwnerEmail"]] = [get_header(columns)]
-      else
-        row_csv_array = []
-        columns.each do |column|
-          field = column['dataIndex']
-          if field != "ProjectOwnerEmail"
-            row_csv_array.push(escape_text_for_csv(row[field]))
-          end
-        end
-        csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
       end
+      row_csv_array = []
+      columns.each do |column|
+        field = column['dataIndex']
+        if field != "ProjectOwnerEmail"
+          row_csv_array.push(escape_text_for_csv(row[field]))
+        end
+      end
+      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
     end
   end
-  
   return csv_array
 end
 
@@ -479,7 +513,9 @@ end
 
 def errors_csv(rows)
   #puts rows
-  csv = get_csv(rows,true)
+
+  csv = @options.export_mode == "pv" ? get_csv_from_keys(rows,true) : get_csv(rows,true)
+
   filename = "SAPErrors_#{@time_now}.csv"
   puts "Writing to #{filename}"
   CSV.open("#{filename}", "wb") do |csv_file|
@@ -489,7 +525,7 @@ def errors_csv(rows)
   end
   
 
-if (@options.export_mode == "email")
+  if (@options.export_mode == "email" || @options.export_mode == "pv")
     send_email(filename, rows,$to_address, @time_now)
   end
 end
@@ -583,6 +619,24 @@ def is_valid(row)
   end
 end
 
+
+def is_valid_key(row)
+  valid = "valid"
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+    if !validate_keys(row)
+      valid = "Does not match SAP Keys file"
+    end 
+  else
+    valid = "One or more of the SAP Key is Missing"
+  end
+  return valid
+end
+
+def validate_keys(row)
+  return  (@network.include? row['c_SAPNetwork']) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'])
+end
+
+
 def date_of_prev(day)
   date  = Date.parse(day)
   delta = date < Date.today ? 0 : 7
@@ -618,6 +672,24 @@ def send_email(filename,rows,to_address,time_now)
 
 end
 
+def load_keys_from_csv
+
+  file = "SAP-Keys.csv"
+
+  @project = []
+  @network = []
+  @operation = []
+  @sub_operation = []
+
+  CSV.foreach(file, :col_sep => ",", :return_headers => false) do |row|
+    @project << row[0]
+    @network << row[1]
+    @operation << row[2]
+    @sub_operation << row[3]
+  end
+
+end
+
 ## - start here -
 @time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
 check_usage()
@@ -632,13 +704,15 @@ rows = add_users_to_time_values(rows)
 rows = add_artifact_to_time_values(rows)
 
 rows = convert_to_output_array(rows,pi_types)
-
-if(@export_mode == "check_sap_keys")
+if(@options.export_mode == "pv")
   #send email of missing and incorrect sap keys
-
-  
+  puts "In post validation mode"
+  load_keys_from_csv()
+  errors_csv(rows)
 
 else
+  puts "In regular mode"
+
   export_csv(rows)
   errors_csv(rows)
   sap_headers_xml(rows)
