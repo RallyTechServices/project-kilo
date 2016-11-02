@@ -31,8 +31,6 @@ def check_usage()
     opts.separator ""
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
-    opts.on('-s', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
-    opts.on('-e', '--end_date end_date', String, 'Enter end date, if not given yesterday is taken as end date') { |o| @options.end_date = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
 
     #{ |o| @options.mode = o }
@@ -327,7 +325,7 @@ end
 def convert_to_output_array(rows,pi_types)
   output_rows = []
   rows.each do |row|
-    if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "No" && row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] != "")
+    if (row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution" || row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes")
       output_rows.push({
         "UserName" => row["UserObject"] ? row["UserObject"]["UserName"] :"",
         "ProjectName"  => row["TimeEntryProjectObject"]["Name"],
@@ -443,17 +441,16 @@ def get_split_csv(rows,error)
     if !error ||  reason != "valid"
       if csv_array[row["ProjectOwnerEmail"]].nil?
         csv_array[row["ProjectOwnerEmail"]] = [get_header(columns)]
-      else
-        row_csv_array = []
-        columns.each do |column|
-          field = column['dataIndex']
-          if field != "ProjectOwnerEmail"
-            row_csv_array.push(escape_text_for_csv(row[field]))
-          end
-        end
-        row_csv_array.push(reason)
-        csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
       end
+      row_csv_array = []
+      columns.each do |column|
+        field = column['dataIndex']
+        if field != "ProjectOwnerEmail"
+          row_csv_array.push(escape_text_for_csv(row[field]))
+        end
+      end
+      row_csv_array.push(reason)
+      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array) 
     end
   end
   
@@ -480,10 +477,10 @@ def is_valid(row)
   valid = "valid"
   if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
     if !validate_keys(row)
-      valid = "Does not match SAP Keys file"
+      valid = $reason_1
     end 
   else
-    valid = "One or more of the SAP Key is Missing"
+    valid = $reason_2
   end
   return valid
 end

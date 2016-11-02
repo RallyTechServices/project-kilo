@@ -229,21 +229,23 @@ Ext.define('PTApp', {
             value: 0
         });
 
+        var filters = Rally.data.wsapi.Filter.and(filter);
         //console.log(filter);
         //check if  c_KMDTimeregistrationIntegration on project is not "No".
-
-        filter.push({
-            property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
-            operator: '!=',
-            value: 'No'
-        });
-
+        var integFilter = Rally.data.wsapi.Filter.or([{
+                                property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
+                                value: 'Yes'
+                            },
+                            {
+                                property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
+                                value: 'Yes with suboperation substitution'
+                            }]);
 
         Ext.create('Rally.data.wsapi.Store', {
             model: "TimeEntryValue",
             //fetch: true,
             fetch: ["Name","FormattedID","TimeEntryItem","TimeEntryValueObject","TimeEntryItemObject","User","UserObject","WorkProduct","Requirement","Parent","PortfolioItem","Task","Artifact","Hierarchy","TypePath","_type","UserObject","UserName","TaskDisplayString","ProjectDisplayString","WorkProductDisplayString","c_SAPNetwork","c_SAPProject","c_SAPSubOperation","c_SAPOperation","Hours","ObjectID","DateVal","c_KMDEmployeeID","Project","c_KMDTimeregistrationIntegration","Owner","EmailAddress","c_DefaultSAPSubOperation"],
-            filters: filter,
+            filters: filters.and(integFilter),
             limit: 'Infinity'
         }).load({
             callback: function(records, operation, successful) {
@@ -686,6 +688,8 @@ Ext.define('PTApp', {
     _getDateFilter: function() {
         var startDateCmp = Ext.getCmp('startDate').getValue();
         var endDateCmp = Ext.getCmp('endDate').getValue();
+        //Include the selected end date.
+        endDateCmp.setDate(endDateCmp.getDate()+1);
         var start = Rally.util.DateTime.toIsoString(startDateCmp, false);
         var end = Rally.util.DateTime.toIsoString(endDateCmp, false);
 
