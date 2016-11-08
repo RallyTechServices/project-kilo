@@ -31,6 +31,7 @@ def check_usage()
     opts.separator ""
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
+    opts.on('-k', '--keys_file keys_file', String, 'SAP Keys CSV file') { |o| @options.keys_file = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
 
     #{ |o| @options.mode = o }
@@ -496,8 +497,12 @@ def date_of_prev(day)
 end
 
 def send_email(filename,rows,to_address,time_now)
+  options = { :address              => $smtp_host,
+              :port                 => $smtp_port
+            }
+
   Mail.defaults do
-    delivery_method :smtp, address: $smtp_host, port: $smtp_port
+    delivery_method :smtp, options
   end
 
   csv = get_split_csv(rows,true)
@@ -515,8 +520,11 @@ def send_email(filename,rows,to_address,time_now)
       from     $from_address
       to       key
       subject  $email_subject + ": " + time_now
-      body     File.read('email-template.txt')#$email_body
       add_file :filename => filename, :content => csv_string
+      html_part do
+        content_type 'text/html; charset=UTF-8'
+        body  File.read('email-template.txt')
+      end        
     end
 
     mail.deliver!  
@@ -526,7 +534,15 @@ end
 
 def load_keys_from_csv
 
-  file = "SAP-Keys.csv"
+  if !FileTest.exist?(@options.keys_file)
+    puts 
+    puts "SAP Keys file #{@options.keys_file} does not exist"
+    puts 
+    exit 1
+  end
+
+  file = @options.keys_file #"SAP-Keys.csv"
+
 
   @project = []
   @network = []
@@ -545,6 +561,7 @@ end
 ## - start here -
 @time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
 check_usage()
+load_keys_from_csv()
 connect_to_rally()
 pi_types = get_pi_types()
 
@@ -554,8 +571,6 @@ us_values = get_time_values("hierarchicalrequirement")
 
 rows = add_time_entry_to_time_values(task_values,us_values)
 rows = add_artifact_to_time_values(rows)
-
-load_keys_from_csv()
 
 rows = convert_to_output_array(rows,pi_types)
 

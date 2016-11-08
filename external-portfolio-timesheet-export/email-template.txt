@@ -1,5 +1,5 @@
 <h1>Hi</h1>,
- 
+
 You have received this email with KMD Rally time registration errors because you are a project owner.
  
 Some of the time registrations on your project this week are not correct and must be fixed before importing in to SAP.

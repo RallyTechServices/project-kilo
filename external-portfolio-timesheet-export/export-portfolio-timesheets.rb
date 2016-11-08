@@ -31,6 +31,7 @@ def check_usage()
     opts.separator ""
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
+    opts.on('-k', '--keys_file keys_file', String, 'SAP Keys CSV file') { |o| @options.keys_file = o }
     opts.on('-s', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
     opts.on('-e', '--end_date end_date', String, 'Enter end date, if not given yesterday is taken as end date') { |o| @options.end_date = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email, pv or regular. Default is regular') { |o| @options.export_mode = o }
@@ -446,8 +447,9 @@ def is_valid_by_keys(row)
       valid = $reason_1
     end 
   else
-    valid = $reason_1
+    valid = $reason_2
   end
+  #puts row['FeatureID'] + " : " + valid
   return valid
 end
 
@@ -470,7 +472,7 @@ def get_csv(rows,error)
       csv_array.push(row_csv_array)
     end
   end
-  
+ 
   return csv_array
 end
 
@@ -498,6 +500,29 @@ def get_split_csv(rows,error)
   return csv_array
 end
 
+def get_split_csv_from_keys(rows,error)
+  columns = get_columns()
+  csv_array = {} #[get_header(columns)]
+  rows.each do |row|
+    reason = is_valid_by_keys(row)
+    if !error || reason != "valid"
+      if csv_array[row["ProjectOwnerEmail"]].nil?
+        csv_array[row["ProjectOwnerEmail"]] = [get_header(columns)]
+      end
+      row_csv_array = []
+      columns.each do |column|
+        field = column['dataIndex']
+        if field != "ProjectOwnerEmail"
+          row_csv_array.push(escape_text_for_csv(row[field]))
+        end
+      end
+      row_csv_array.push(reason)
+      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
+    end
+  end
+  return csv_array
+end
+
 
 def export_csv(rows)
   csv = get_csv(rows,false)
@@ -515,7 +540,7 @@ def errors_csv(rows)
   #puts rows
 
   csv = @options.export_mode == "pv" ? get_csv_from_keys(rows,true) : get_csv(rows,true)
-
+  #puts csv
   filename = "SAPErrors_#{@time_now}.csv"
   puts "Writing to #{filename}"
   CSV.open("#{filename}", "wb") do |csv_file|
@@ -644,11 +669,15 @@ def date_of_prev(day)
 end
 
 def send_email(filename,rows,to_address,time_now)
-  Mail.defaults do
-    delivery_method :smtp, address: $smtp_host, port: $smtp_port
-  end
 
-  csv = get_split_csv(rows,true)
+  options = { :address              => $smtp_host,
+              :port                 => $smtp_port
+            }
+
+  Mail.defaults do
+    delivery_method :smtp, options
+  end
+  csv = @options.export_mode == "pv" ? get_split_csv_from_keys(rows,true) : get_csv(rows,true)
   #puts csv
 
   csv.each do |key, array|
@@ -663,8 +692,11 @@ def send_email(filename,rows,to_address,time_now)
       from     $from_address
       to       key
       subject  $email_subject + ": " + time_now
-      body     File.read('email-template.txt')#$email_body
       add_file :filename => filename, :content => csv_string
+      html_part do
+        content_type 'text/html; charset=UTF-8'
+        body  File.read('email-template.txt')
+      end      
     end
 
     mail.deliver!  
@@ -674,8 +706,15 @@ end
 
 def load_keys_from_csv
 
-  file = "SAP-Keys.csv"
+  if !FileTest.exist?(@options.keys_file)
+    puts 
+    puts "SAP Keys file #{@options.keys_file} does not exist"
+    puts 
+    exit 1
+  end
 
+  file = @options.keys_file #"SAP-Keys.csv"
+  
   @project = []
   @network = []
   @operation = []
