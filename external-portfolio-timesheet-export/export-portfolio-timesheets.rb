@@ -658,7 +658,7 @@ def is_valid_key(row)
 end
 
 def validate_keys(row)
-  return  (@network.include? row['c_SAPNetwork']) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'])
+  return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s)
 end
 
 
