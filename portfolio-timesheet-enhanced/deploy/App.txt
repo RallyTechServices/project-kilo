@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 01 2016 18:07:56 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Nov 21 2016 15:57:19 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 01 2016 18:07:56 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Mon Nov 21 2016 15:57:19 GMT-0800 (PST)";
         var STORY    = "US8846";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 114450071501;
+        var CHECKSUM = 116045724899;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -1590,7 +1590,23 @@ Ext.define('PTApp', {
                     app.createTimeValueStore();
                 }
             }
-        }, {
+        }, 
+        {
+            name: 'projectFilter',
+            id: 'projectFilter',
+            xtype: 'rallycheckboxfield',
+            boxLabelAlign: 'before',
+            fieldLabel: '',
+            margin: '5 5 5 5',
+            boxLabel: 'Use Project Filter',
+            value: true,
+            listeners: {
+                change: function(field, value) {
+                    app.createTimeValueStore();
+                }
+            }
+        },
+        {
             id: 'exportButton',
             margin: '5 5 5 5',
             xtype: 'rallybutton',
@@ -1684,20 +1700,25 @@ Ext.define('PTApp', {
         var filters = Rally.data.wsapi.Filter.and(filter);
         //console.log(filter);
         //check if  c_KMDTimeregistrationIntegration on project is not "No".
-        var integFilter = Rally.data.wsapi.Filter.or([{
-                                property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
-                                value: 'Yes'
-                            },
-                            {
-                                property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
-                                value: 'Yes with suboperation substitution'
-                            }]);
+        var integFilter = [];
+        if(Ext.getCmp('projectFilter').getValue()){
+            integFilter = Rally.data.wsapi.Filter.or([{
+                        property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
+                        value: 'Yes'
+                    },
+                    {
+                        property: 'TimeEntryItem.Project.c_KMDTimeregistrationIntegration',
+                        value: 'Yes with suboperation substitution'
+                    }]);
+            filters = filters.and(integFilter);
+        }
+
 
         Ext.create('Rally.data.wsapi.Store', {
             model: "TimeEntryValue",
             //fetch: true,
             fetch: ["Name","FormattedID","TimeEntryItem","TimeEntryValueObject","TimeEntryItemObject","User","UserObject","WorkProduct","Requirement","Parent","PortfolioItem","Task","Artifact","Hierarchy","TypePath","_type","UserObject","UserName","TaskDisplayString","ProjectDisplayString","WorkProductDisplayString","c_SAPNetwork","c_SAPProject","c_SAPSubOperation","c_SAPOperation","Hours","ObjectID","DateVal","c_KMDEmployeeID","Project","c_KMDTimeregistrationIntegration","Owner","EmailAddress","c_DefaultSAPSubOperation"],
-            filters: filters.and(integFilter),
+            filters: filters,
             limit: 'Infinity'
         }).load({
             callback: function(records, operation, successful) {
@@ -1899,7 +1920,7 @@ Ext.define('PTApp', {
 
     getSubOperationValue: function(r){
         var value = '';
-        if(r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration")=="Yes with suboperation substitution")   {
+        if(Ext.getCmp('projectFilter').getValue() && r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration")=="Yes with suboperation substitution")   {
             value = r.get("UserObject").get("c_DefaultSAPSubOperation");
         } else {
             value = app.getFieldValue(r, 'c_SAPSubOperation');
