@@ -32,6 +32,7 @@ def check_usage()
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
     opts.on('-k', '--keys_file keys_file', String, 'SAP Keys CSV file') { |o| @options.keys_file = o }
+    opts.on('-t', '--template_file template_file', String, 'Email Template file') { |o| @options.template_file = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email or regular. Default is regular') { |o| @options.export_mode = o }
 
     #{ |o| @options.mode = o }
@@ -49,13 +50,22 @@ def check_usage()
     exit                                                                   #
   end      
 
-  if !FileTest.exist?(@options.auth_file)
+  if @options.auth_file.nil? || !FileTest.exist?(@options.auth_file)
     puts 
     puts "Authorization file #{@options.auth_file} does not exist"
     puts 
     exit 1
   end
   
+  if (@options.export_mode == "email")
+    if @options.template_file.nil? || !FileTest.exist?(@options.template_file)
+      puts 
+      puts "Email Template file #{@options.template_file} does not exist"
+      puts 
+      exit 1
+    end
+  end
+
   require "./#{@options.auth_file}"
 end
 
@@ -516,6 +526,8 @@ def send_email(filename,rows,to_address,time_now)
     end
     #puts data
 
+    template_file = File.read(@options.template_file)
+    #puts template_file
     mail = Mail.new do
       from     $from_address
       to       key
@@ -523,7 +535,7 @@ def send_email(filename,rows,to_address,time_now)
       add_file :filename => filename, :content => csv_string
       html_part do
         content_type 'text/html; charset=UTF-8'
-        body  File.read('email-template.txt')
+        body  template_file
       end        
     end
 
@@ -534,7 +546,7 @@ end
 
 def load_keys_from_csv
 
-  if !FileTest.exist?(@options.keys_file)
+  if @options.keys_file.nil? || !FileTest.exist?(@options.keys_file)
     puts 
     puts "SAP Keys file #{@options.keys_file} does not exist"
     puts 

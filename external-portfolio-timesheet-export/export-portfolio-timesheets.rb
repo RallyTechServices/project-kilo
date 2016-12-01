@@ -32,6 +32,7 @@ def check_usage()
     opts.separator "Specific options:"
     opts.on('-f', '--file auth_file', String, 'Authorization file') { |o| @options.auth_file = o }
     opts.on('-k', '--keys_file keys_file', String, 'SAP Keys CSV file') { |o| @options.keys_file = o }
+    opts.on('-t', '--template_file template_file', String, 'Email Template file') { |o| @options.template_file = o }
     opts.on('-s', '--start_date start_date', String, 'Enter start date, if not given previous Monday is taken as start date') { |o| @options.start_date = o }
     opts.on('-e', '--end_date end_date', String, 'Enter end date, if not given yesterday is taken as end date') { |o| @options.end_date = o }
     opts.on('-m', '--mode export_mode', String, 'Enter export mode. email, pv or regular. Default is regular') { |o| @options.export_mode = o }
@@ -51,12 +52,21 @@ def check_usage()
     exit                                                                   #
   end      
 
-  if !FileTest.exist?(@options.auth_file)
+  if @options.auth_file.nil? || !FileTest.exist?(@options.auth_file)
     puts 
     puts "Authorization file #{@options.auth_file} does not exist"
     puts 
     exit 1
   end
+
+  if (@options.export_mode == "email" || @options.export_mode == "pv"  )
+    if @options.template_file.nil? || !FileTest.exist?(@options.template_file)
+      puts 
+      puts "Email Template file #{@options.template_file} does not exist"
+      puts 
+      exit 1
+    end
+  end  
   
   require "./#{@options.auth_file}"
 end
@@ -677,7 +687,8 @@ def send_email(filename,rows,to_address,time_now)
   Mail.defaults do
     delivery_method :smtp, options
   end
-  csv = @options.export_mode == "pv" ? get_split_csv_from_keys(rows,true) : get_csv(rows,true)
+  #csv = @options.export_mode == "pv" ||  @options.export_mode == "email" ? get_split_csv_from_keys(rows,true) : get_csv(rows,true)
+  csv = get_split_csv_from_keys(rows,true)
   #puts csv
 
   csv.each do |key, array|
@@ -687,6 +698,7 @@ def send_email(filename,rows,to_address,time_now)
       end
     end
     #puts data
+    template_file = File.read(@options.template_file)
 
     mail = Mail.new do
       from     $from_address
@@ -695,7 +707,7 @@ def send_email(filename,rows,to_address,time_now)
       add_file :filename => filename, :content => csv_string
       html_part do
         content_type 'text/html; charset=UTF-8'
-        body  File.read('email-template.txt')
+        body  template_file
       end      
     end
 
@@ -706,7 +718,7 @@ end
 
 def load_keys_from_csv
 
-  if !FileTest.exist?(@options.keys_file)
+  if @options.keys_file.nil? || !FileTest.exist?(@options.keys_file)
     puts 
     puts "SAP Keys file #{@options.keys_file} does not exist"
     puts 
@@ -743,10 +755,11 @@ rows = add_users_to_time_values(rows)
 rows = add_artifact_to_time_values(rows)
 
 rows = convert_to_output_array(rows,pi_types)
+load_keys_from_csv()
+
 if(@options.export_mode == "pv")
   #send email of missing and incorrect sap keys
   puts "In post validation mode"
-  load_keys_from_csv()
   errors_csv(rows)
 
 else
