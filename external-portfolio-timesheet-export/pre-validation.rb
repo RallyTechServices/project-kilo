@@ -106,10 +106,6 @@ def get_pi_types
 end
 
 
-#
-# (((DateVal >= "2015-09-12T00:00:00-04:00") AND (DateVal <= "2016-09-11T00:00:00-04:00")) AND (Hours > 0))
-#((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != "No"))
-
 #get all Stories that doesnt have tasks and all the tasks
 
 def get_time_values(model)
@@ -486,7 +482,7 @@ end
 
 def is_valid(row)
   valid = "valid"
-  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) #&& (row['c_KMDEmployeeID'] != nil)
     if !validate_keys(row)
       valid = $reason_1
     end 
@@ -495,9 +491,13 @@ def is_valid(row)
   end
   return valid
 end
-
+#todo - check valid if subop is not null.
 def validate_keys(row)
-  return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s)
+  if(row['c_SAPSubOperation'] != nil)
+    return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s) && (@operation.include? row['c_SAPSubOperation'].to_s)
+  else
+    return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s)
+  end
 end
 
 def date_of_prev(day)
@@ -561,11 +561,11 @@ def load_keys_from_csv
   @operation = []
   @sub_operation = []
 
-  CSV.foreach(file, :col_sep => ",", :return_headers => false) do |row|
+  CSV.foreach(file, :col_sep => ";", :return_headers => false) do |row|
     @project << row[0]
-    @network << row[1]
-    @operation << row[2]
-    @sub_operation << row[3]
+    @network << row[4]
+    @operation << row[6]
+    @sub_operation << row[8]
   end
 
 end

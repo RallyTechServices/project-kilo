@@ -126,6 +126,11 @@ def get_time_values
 
   if(@options.start_date.nil?)
     start_date = date_of_prev("Monday")
+    #if a week contains a new month, the export is done twice. This conidition makes sure the 2nd export done at the end of the weeks starts from the begining of the month.
+    first_day_of_month = Date.new(Date.today.year,Date.today.month,1)
+
+    start_date = start_date > first_day_of_month ? start_date : first_day_of_month
+
   else
     begin
       start_date = Date.parse(@options.start_date)
@@ -136,8 +141,15 @@ def get_time_values
     end
   end
 
-  puts "start date  #{start_date}"
-  puts "end date  #{end_date}"
+  #adjusting the dates and the query string to include start and end date.
+  start_date = start_date - 1
+  end_date = end_date + 1
+
+  start_date = start_date.to_s + "T00:00:00.000Z"
+  end_date = end_date.to_s + "T00:00:00.000Z"
+
+  #puts "start date  #{start_date}"
+  #puts "end date  #{end_date}"
 
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
@@ -146,7 +158,8 @@ def get_time_values
   query.limit = 999999
   query.page_size = 2000
   query.project = nil
-  query.query_string = "((((DateVal >= #{start_date}) AND (DateVal <= #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != #{integration}))"
+  query.query_string = "((((DateVal > #{start_date}) AND (DateVal < #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != #{integration}))"
+  #puts "((((DateVal > #{start_date}) AND (DateVal < #{end_date})) AND (Hours > 0)) AND (TimeEntryItem.Project.c_KMDTimeregistrationIntegration != #{integration}))"
   @rally.find(query)
 end
 
@@ -155,6 +168,7 @@ def add_time_entry_to_time_values(time_values)
   time_values.each do |time_value|
     time_entry_item = time_value["TimeEntryItem"]
     time_entry_item.read
+    puts time_value["ObjectID"].to_s + ":" + time_value["DateVal"].to_s 
     time_entry_project = time_entry_item["Project"]
     time_entry_project.read
     
@@ -452,7 +466,7 @@ end
 
 def is_valid_by_keys(row)
   valid = "valid"
-  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) #&& (row['c_KMDEmployeeID'] != nil)
     if !validate_keys(row)
       valid = $reason_1
     end 
@@ -732,11 +746,11 @@ def load_keys_from_csv
   @operation = []
   @sub_operation = []
 
-  CSV.foreach(file, :col_sep => ",", :return_headers => false) do |row|
+  CSV.foreach(file, :col_sep => ";", :return_headers => false) do |row|
     @project << row[0]
-    @network << row[1]
-    @operation << row[2]
-    @sub_operation << row[3]
+    @network << row[4]
+    @operation << row[6]
+    @sub_operation << row[8]
   end
 
 end

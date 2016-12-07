@@ -1,5 +1,11 @@
-Project,Network,Operation,SubOperation
-1234,1000,100,10
-123,456,789,10
-123,456,789,10
-UP-1234,1000,200,25
+Project-ID;Project description;WBS element-ID;WBS element description;Network-ID;Network description;Activity-ID;Activity description;Sub activity-ID;Sub activity description;Active (Yes/No)
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;10;Continuous Improvement;;;Yes
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;20;KMD Rally;;;Yes
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;30;Other Projects;;;Yes
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;20;KMD Rally;40;KMD Rally Mobile App;Yes
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;20;KMD Rally;50;KMD Rally Integrations;Yes
+VL-1878;SCE Proces & Change Engineering;VL-1878-01;Proces & Change Engineering;6727046;Proces & Change Engineering;20;KMD Rally;60;Ekstern coaching;Yes
+1234;;;;1000;;100;;10;
+123;;;;456;;789;;10;
+123;;;;456;;789;;10;
+UP-1234;;;;1000;;200;;25;
