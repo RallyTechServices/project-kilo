@@ -6,3 +6,5 @@ E1BPCATS1*.xml
 E1BPCATS8*.xml
 temp.fil
 .DS_Store
+test*
+.byebug_history
