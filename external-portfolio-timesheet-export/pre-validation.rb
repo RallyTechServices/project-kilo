@@ -482,7 +482,7 @@ end
 
 def is_valid(row)
   valid = "valid"
-  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) #&& (row['c_KMDEmployeeID'] != nil)
+  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
     if !validate_keys(row)
       valid = $reason_1
     end 
@@ -491,12 +491,14 @@ def is_valid(row)
   end
   return valid
 end
-#todo - check valid if subop is not null.
+
 def validate_keys(row)
   if(row['c_SAPSubOperation'] != nil)
-    return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s) && (@operation.include? row['c_SAPSubOperation'].to_s)
+    all_sap_keys = row['c_SAPProject'] + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s + row['c_SAPSubOperation'].to_s
+    return  @sap_keys_all.include? all_sap_keys
   else
-    return  (@network.include? row['c_SAPNetwork'].to_s) && (@project.include? row['c_SAPProject']) && (@operation.include? row['c_SAPOperation'].to_s)
+    no_so_sap_keys = row['c_SAPProject'] + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s
+    return  @sap_keys_no_so.include? no_so_sap_keys
   end
 end
 
@@ -556,16 +558,19 @@ def load_keys_from_csv
   file = @options.keys_file #"SAP-Keys.csv"
 
 
-  @project = []
-  @network = []
-  @operation = []
-  @sub_operation = []
-
+  # @project = []
+  # @network = []
+  # @operation = []
+  # @sub_operation = []
+  @sap_keys_all = []
+  @sap_keys_no_so = []
   CSV.foreach(file, :col_sep => ";", :return_headers => false) do |row|
-    @project << row[0]
-    @network << row[4]
-    @operation << row[6]
-    @sub_operation << row[8]
+    # @project << row[0]
+    # @network << row[4]
+    # @operation << row[6]
+    # @sub_operation << row[8]
+    @sap_keys_all << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6]) + (row[8].nil? ? "" : row[8])
+    @sap_keys_no_so << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6])
   end
 
 end
