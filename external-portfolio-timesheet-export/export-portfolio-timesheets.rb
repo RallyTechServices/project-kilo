@@ -126,11 +126,13 @@ def get_time_values
 
   if(@options.start_date.nil?)
     start_date = date_of_prev("Monday")
-    #if a week contains a new month, the export is done twice. This conidition makes sure the 2nd export done at the end of the weeks starts from the begining of the month.
+    # #if a week contains a new month, the export is done twice. This conidition makes sure the 2nd export done at the end of the weeks starts from the begining of the month.
     first_day_of_month = Date.new(Date.today.year,Date.today.month,1)
+    first_day_of_month.strftime("%F")
 
-    start_date = start_date > first_day_of_month ? start_date : first_day_of_month
-
+    if(start_date < first_day_of_month && end_date >= first_day_of_month)
+        start_date = first_day_of_month
+    end
   else
     begin
       start_date = Date.parse(@options.start_date)
@@ -140,6 +142,8 @@ def get_time_values
       exit 1
     end
   end
+
+
 
   #adjusting the dates and the query string to include start and end date.
   start_date = start_date - 1

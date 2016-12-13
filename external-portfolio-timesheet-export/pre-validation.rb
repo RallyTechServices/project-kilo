@@ -110,33 +110,9 @@ end
 
 def get_time_values(model)
   now = Date.today
-  if(@options.end_date.nil?)
-    end_date = Date.today - 1 # yesterday 
-  else
-    begin
-      end_date = Date.parse(@options.end_date)
-    rescue ArgumentError
-      puts "InvalidArgument: Incorrect end date format. Please enter date as YYYY-MM-DD"
-      puts 
-      exit 1
-    end
-  end
-
-  puts "start date given in argument #{@options.start_date}"
 
   integration = "No"
 
-  if(@options.start_date.nil?)
-    start_date = date_of_prev("Monday")
-  else
-    begin
-      start_date = Date.parse(@options.start_date)
-    rescue ArgumentError
-      puts "InvalidArgument: Incorrect start date format. Please enter date as YYYY-MM-DD"
-      puts 
-      exit 1
-    end
-  end
   query = RallyAPI::RallyQuery.new
   query.type = model
   query.fetch = true
