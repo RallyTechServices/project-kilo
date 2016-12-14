@@ -741,7 +741,7 @@ def load_keys_from_csv
   # @sub_operation = []
   @sap_keys_all = []
   @sap_keys_no_so = []
-  CSV.foreach(file, :col_sep => ";", :return_headers => false) do |row|
+  CSV.foreach(file, :col_sep => ";", :return_headers => false, :encoding => 'ISO-8859-1', :quote_char => "\x00") do |row|
     # @project << row[0]
     # @network << row[4]
     # @operation << row[6]
@@ -753,7 +753,15 @@ end
 
 ## - start here -
 @time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
+puts "Start Time: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
+
 check_usage()
+
+load_keys_from_csv()
+
+puts "Time after parsing CSV file: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
 connect_to_rally()
 pi_types = get_pi_types()
 
@@ -765,7 +773,6 @@ rows = add_users_to_time_values(rows)
 rows = add_artifact_to_time_values(rows)
 
 rows = convert_to_output_array(rows,pi_types)
-load_keys_from_csv()
 
 if(@options.export_mode == "pv")
   #send email of missing and incorrect sap keys
