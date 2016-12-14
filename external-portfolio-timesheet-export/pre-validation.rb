@@ -540,7 +540,7 @@ def load_keys_from_csv
   # @sub_operation = []
   @sap_keys_all = []
   @sap_keys_no_so = []
-  CSV.foreach(file, :col_sep => ";", :return_headers => false) do |row|
+  CSV.foreach(file, :col_sep => ";", :return_headers => false, :encoding => 'ISO-8859-1', :quote_char => "\x00") do |row|
     # @project << row[0]
     # @network << row[4]
     # @operation << row[6]
@@ -548,13 +548,16 @@ def load_keys_from_csv
     @sap_keys_all << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6]) + (row[8].nil? ? "" : row[8])
     @sap_keys_no_so << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6])
   end
-
+puts @sap_keys_all
+puts @sap_keys_no_so
 end
 
 ## - start here -
 @time_now = Time.new.strftime("%Y_%m_%d_%H_%M_%S")
+puts "Start Time: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 check_usage()
 load_keys_from_csv()
+puts "Time after parsing CSV file: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 connect_to_rally()
 pi_types = get_pi_types()
 
@@ -570,3 +573,4 @@ rows = convert_to_output_array(rows,pi_types)
 errors_csv(rows)
 
 puts "Done!"
+puts "End Time: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
