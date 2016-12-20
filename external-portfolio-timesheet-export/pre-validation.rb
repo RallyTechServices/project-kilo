@@ -20,6 +20,7 @@ require "date"
 #
 # ------------------------------------------------------------------------------
 
+@parents_hash = {}
 
 def check_usage()
 
@@ -115,8 +116,8 @@ def get_time_values(model)
 
   query = RallyAPI::RallyQuery.new
   query.type = model
-  query.fetch = true
-  #query.fetch = "Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation" #true
+  #query.fetch = true
+  query.fetch = "ObjectID, Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation,CreationDate" #true
 
   query.limit = 999999
   query.page_size = 2000
@@ -127,53 +128,35 @@ end
 
 def add_time_entry_to_time_values(task_values,us_values)
   rows = []
-  task_values.each do |time_value|
+  task_values.each do |task|
     
-    time_entry_project = time_value["Project"]
-    if !time_entry_project.nil?
-      time_entry_project.read
-    end    
+    task_project = task["Project"]
     
-    time_entry_user_object =time_value["Owner"] 
-    if !time_entry_user_object.nil?
-      time_entry_user_object.read
-    end
+    task_user_object =task["Owner"] 
 
-    time_entry_project_owner = time_entry_project["Owner"]
-    if !time_entry_project_owner.nil?
-      time_entry_project_owner.read
-    end
+    task_project_owner = task_project["Owner"]
 
     rows.push({
-      "TimeEntryValueObject" => time_value,
-      "UserObject" => time_entry_user_object,
-      "TimeEntryProjectOwnerObject" => time_entry_project_owner,
-      "TimeEntryProjectObject" => time_entry_project
+      "TimeEntryValueObject" => task,
+      "UserObject" => task_user_object,
+      "TimeEntryProjectOwnerObject" => task_project_owner,
+      "TimeEntryProjectObject" => task_project
     })
   end
   
-  us_values.each do |time_value|
+  us_values.each do |story|
 
-    time_entry_project = time_value["Project"]
-    if !time_entry_project.nil?
-      time_entry_project.read
-    end    
+    story_project = story["Project"]
     
-    time_entry_user_object =time_value["Owner"] 
-    if !time_entry_user_object.nil?
-      time_entry_user_object.read
-    end
+    story_user_object =story["Owner"] 
 
-    time_entry_project_owner = time_entry_project["Owner"]
-    if !time_entry_project_owner.nil?
-      time_entry_project_owner.read
-    end
+    story_project_owner = story_project["Owner"]
 
     rows.push({
-      "TimeEntryValueObject" => time_value,
-      "UserObject" => time_entry_user_object,
-      "TimeEntryProjectOwnerObject" => time_entry_project_owner,
-      "TimeEntryProjectObject" => time_entry_project
+      "TimeEntryValueObject" => story,
+      "UserObject" => story_user_object,
+      "TimeEntryProjectOwnerObject" => story_project_owner,
+      "TimeEntryProjectObject" => story_project
     })
   end
 
@@ -224,7 +207,20 @@ def get_parents(item, hierarchy=[])
   if parent.nil?
     return hierarchy
   end
-  parent.read
+
+
+
+  # parent.read
+
+  parent_object_id = parent["_refObjectUUID"]
+  if(@parents_hash[parent_object_id].nil?)
+      parent.read
+      #puts "Parent ObjectID - #{parent_object_id} - #{parent["Name"]}"
+      @parents_hash[parent_object_id] = parent
+  else
+      parent = @parents_hash[parent_object_id]
+      #puts "#{parent["c_SAPProject"]} - #{parent["Name"]}"
+  end
 
   hierarchy.push(parent)
   
@@ -470,10 +466,10 @@ end
 
 def validate_keys(row)
   if(row['c_SAPSubOperation'] != nil)
-    all_sap_keys = row['c_SAPProject'] + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s + row['c_SAPSubOperation'].to_s
+    all_sap_keys = row['c_SAPProject'].downcase + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s + row['c_SAPSubOperation'].to_s
     return  @sap_keys_all.include? all_sap_keys
   else
-    no_so_sap_keys = row['c_SAPProject'] + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s
+    no_so_sap_keys = row['c_SAPProject'].downcase + row['c_SAPNetwork'].to_s + row['c_SAPOperation'].to_s
     return  @sap_keys_no_so.include? no_so_sap_keys
   end
 end
@@ -545,11 +541,11 @@ def load_keys_from_csv
     # @network << row[4]
     # @operation << row[6]
     # @sub_operation << row[8]
-    @sap_keys_all << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6]) + (row[8].nil? ? "" : row[8])
-    @sap_keys_no_so << (row[0].nil? ? "" : row[0]) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6])
+    @sap_keys_all << (row[0].nil? ? "" : row[0].downcase) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6]) + (row[8].nil? ? "" : row[8])
+    @sap_keys_no_so << (row[0].nil? ? "" : row[0].downcase) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6])
   end
-puts @sap_keys_all
-puts @sap_keys_no_so
+# puts @sap_keys_all
+# puts @sap_keys_no_so
 end
 
 ## - start here -
@@ -563,12 +559,21 @@ pi_types = get_pi_types()
 
 puts "Fetching Time Values"
 task_values = get_time_values("task")
+puts "Time after get_time_values-task: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
 us_values = get_time_values("hierarchicalrequirement")
 
+puts "Time after get_time_values-us: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
 rows = add_time_entry_to_time_values(task_values,us_values)
+puts "Time after add_time_entry_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
 rows = add_artifact_to_time_values(rows)
+puts "Time after add_artifact_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+
 
 rows = convert_to_output_array(rows,pi_types)
+puts "Time after convert_to_output_array: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 errors_csv(rows)
 
