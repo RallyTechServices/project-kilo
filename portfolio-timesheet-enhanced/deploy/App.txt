@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 21 2016 15:57:19 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Jan 27 2017 17:14:51 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 21 2016 15:57:19 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Fri Jan 27 2017 17:14:51 GMT-0800 (PST)";
         var STORY    = "US8846";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 116045724899;
+        var CHECKSUM = 116097103938;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -1874,7 +1874,8 @@ Ext.define('PTApp', {
                         summaryType: 'sum',
                         summaryRenderer: function(value, summaryData, dataIndex) {
                             return Ext.String.format('<div style="background-color:#E4EECF">Total: {0}</div>', value);
-                        }
+                        },
+                        flex:1
                     };
                 } else if (f.name === 'UserName') {
                     return {
@@ -1894,21 +1895,23 @@ Ext.define('PTApp', {
                         text: f.displayName,
                         dataIndex: f.name,
                         renderer: function(value, metaData, record, rowIdx, colIdx, store, view) {
-
                             return app.renderLink(value, record);
-                        }
+                        },
+                        flex:1
                     };
                 } else if (f.name === 'Hierarchy') {
                     return {
                         text: f.displayName,
                         dataIndex: f.name,
                         visible: false,
-                        hidden: true
+                        hidden: true,
+                        flex:1
                     };
                 } else
                     return {
                         text: f.displayName,
-                        dataIndex: f.name
+                        dataIndex: f.name,
+                        flex:1
                     };
             })
         });
@@ -2162,7 +2165,8 @@ Ext.define('PTApp', {
         var startDateCmp = Ext.getCmp('startDate').getValue();
         var endDateCmp = Ext.getCmp('endDate').getValue();
         //Include the selected end date.
-        endDateCmp.setDate(endDateCmp.getDate()+1);
+        endDateCmp.setHours(23,59,59);
+
         var start = Rally.util.DateTime.toIsoString(startDateCmp, false);
         var end = Rally.util.DateTime.toIsoString(endDateCmp, false);
 
