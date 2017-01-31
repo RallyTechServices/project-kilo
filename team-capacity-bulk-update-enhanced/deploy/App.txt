@@ -3,13 +3,13 @@
 <head>
     <title>team-capacity-bulk-update-enhanced</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Jan 24 2017 14:31:54 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Jan 31 2017 09:55:42 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Jan 24 2017 14:31:54 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Tue Jan 31 2017 09:55:42 GMT-0800 (PST)";
         var STORY    = "US";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 21560526263;
+        var CHECKSUM = 23722722565;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -296,7 +296,7 @@ var app = null;
 Ext.define('TSApp', {
     extend: 'Rally.app.TimeboxScopedApp',
     componentCls: 'app',
-    scopeType : 'release',
+    scopeType : 'iteration',
     devMode : false,
     // uncomment launch if setting devmode to true
     // launch: function() {
@@ -569,6 +569,23 @@ Ext.define('TSApp', {
                     icon: '/slm/js-lib/rui/builds/rui/resources/css/images/trash-icon.png',
                     tooltip: 'Delete',
                     handler: function(grid, rowIndex, colIndex) {
+
+                        var data = grid.getStore().getAt(rowIndex).data;
+
+                        Ext.Array.each(Ext.Object.getKeys(data), function(key){ 
+                            if(key.indexOf('CapacityRef') > 0){
+                                if(data[key]){
+                                    data[key].destroy({
+                                        callback: function(result, operation) {
+                                            if(operation.wasSuccessful()) {
+                                                console.log('deleted!');
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+
                         grid.getStore().removeAt(rowIndex);
                     },
                     scope: this
@@ -779,6 +796,38 @@ Ext.define('TSApp', {
 
         // called to save or create a capacity record in AC
         var saveCapacityRecord = function(rec, column,value,callback) {
+            var iRef = column.iterationRef; // iteration ref
+            var uRef = rec.get("userRef"); // user ref
+            var cRef = rec.get(column.id+"CapacityRef"); // capacity ref if already exists
+
+            value = value==="" ? 0 : value; // set the value to zero if empty string
+
+            // if no capacity reference is set then its a new record
+            var record = null;
+            if (_.isUndefined(cRef) || _.isNull(cRef) || cRef==="") {
+                record = Ext.create( bundle.userIterationCapacityModel, {
+                    Iteration : iRef,
+                    Project : app.getContext().getProject(),
+                    User : uRef
+                });
+                record.set(column.id+"CapacityRef",record);
+            } else {
+                record = cRef;
+            }
+
+            // set the value to the record and save.
+            record.set("Capacity",value);
+            record.save({
+                callback : function(result,operation) {
+                    console.log(result,operation);
+                    callback(operation.wasSuccessful());
+                }
+            });
+        };
+
+
+        // called to delete capacity records in AC
+        var deleteCapacityRecords = function(rec, column,value,callback) {
             var iRef = column.iterationRef; // iteration ref
             var uRef = rec.get("userRef"); // user ref
             var cRef = rec.get(column.id+"CapacityRef"); // capacity ref if already exists

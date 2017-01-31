@@ -422,7 +422,8 @@ Ext.define('PTApp', {
                         summaryType: 'sum',
                         summaryRenderer: function(value, summaryData, dataIndex) {
                             return Ext.String.format('<div style="background-color:#E4EECF">Total: {0}</div>', value);
-                        }
+                        },
+                        flex:1
                     };
                 } else if (f.name === 'UserName') {
                     return {
@@ -442,21 +443,23 @@ Ext.define('PTApp', {
                         text: f.displayName,
                         dataIndex: f.name,
                         renderer: function(value, metaData, record, rowIdx, colIdx, store, view) {
-
                             return app.renderLink(value, record);
-                        }
+                        },
+                        flex:1
                     };
                 } else if (f.name === 'Hierarchy') {
                     return {
                         text: f.displayName,
                         dataIndex: f.name,
                         visible: false,
-                        hidden: true
+                        hidden: true,
+                        flex:1
                     };
                 } else
                     return {
                         text: f.displayName,
-                        dataIndex: f.name
+                        dataIndex: f.name,
+                        flex:1
                     };
             })
         });
@@ -710,7 +713,8 @@ Ext.define('PTApp', {
         var startDateCmp = Ext.getCmp('startDate').getValue();
         var endDateCmp = Ext.getCmp('endDate').getValue();
         //Include the selected end date.
-        endDateCmp.setDate(endDateCmp.getDate()+1);
+        endDateCmp.setHours(23,59,59);
+
         var start = Rally.util.DateTime.toIsoString(startDateCmp, false);
         var end = Rally.util.DateTime.toIsoString(endDateCmp, false);
 
