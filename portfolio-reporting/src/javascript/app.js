@@ -5,6 +5,7 @@ Ext.define("TSApp", {
     defaults: { margin: 10 },
     items: [
         {xtype:'container',itemId:'message_box',layout:{type:'hbox'}},
+        {xtype:'container',itemId:'filter_box'},        
         {xtype:'container',itemId:'display_box'}
     ],
 
@@ -12,24 +13,38 @@ Ext.define("TSApp", {
         name : "TSApp"
     },
     
-    selectedPILevel: ['PortfolioItem/Initiative'],
+    selectedPILevel: ['PortfolioItem/Feature'],
 
     modelNames: ['PortfolioItem','HierarchicalRequirement','Task'],
 
     launch: function() {
         var me = this;
         console.log(me._getSelectedColumns());
+        me._addSelector();
+    },
+
+    _addSelector: function(){
+        var me = this;
         me.down('#message_box').add([{
                 name: 'selectorType',
                 itemId: 'selectorType',
-                fieldLabel: 'Select PI: ',
-                width: 250,
+                fieldLabel: 'Select PI Type:',
+                width: 450,
+                labelWidth: 100,
                 margin: '10 10 10 10',                
                 xtype: 'rallyportfolioitemtypecombobox',
                 valueField: 'TypePath',
-                readyEvent: 'ready',
+                readyEvent: 'ready'
+                ,
                 listeners: {
-                    load: me._updateGrid,
+                    ready: function() {
+                        //me._updateGrid([]);
+                        me.updateView([]);
+                    },
+                    change: function(){
+                        //me._updateGrid([]);
+                        me.updateView([]);
+                    },
                     scope: me
                 }
             },
@@ -44,127 +59,201 @@ Ext.define("TSApp", {
                 alwaysExpanded: false,
                 modelTypes: me.modelNames,
                 alwaysSelectedValues: me._getSelectedColumns(),
-                fieldBlackList: ['Attachments','Children']
+                fieldBlackList: ['Attachments','Children'],
+                listeners:{
+                    select: function(){
+                        //me._updateGrid([]);
+                        me.updateView([]);
+
+                    },
+                    scope:me
+                }
             },
             {
-                xtype: 'rallybutton',
-                text: 'Update',
-                margin: '10 10 10 10',
-                cls: 'primary',
-                listeners: {
-                    click: me._updateGrid,
-                    scope: me
+                xtype: 'rallyinlinefiltercontrol',
+                name: 'inlineFilter',
+                itemId: 'inlineFilter',
+                margin: '10 10 10 10',                           
+                context: me.getContext(),
+                height:26,
+                inlineFilterButtonConfig: {
+                    stateful: true,
+                    stateId: me.getContext().getScopedStateId('inline-filter'),
+                    context: me.getContext(),
+                    modelNames: ['PortfolioItem'],
+                    filterChildren: false,
+                    inlineFilterPanelConfig: {
+                        quickFilterPanelConfig: {
+                            defaultFields: ['ArtifactSearch', 'Owner']
+                        }
+                    },
+                    listeners: {
+                        inlinefilterchange: me._onFilterChange,
+                        inlinefilterready: me._onFilterReady,
+                        scope: me
+                    } 
                 }
-            }           
-            ]);
+            }
+        ]);
 
-            //me._updateGrid();
     },
 
-    getValue: function() {
-        var value = {};
-        Ext.Array.each(Ext.ComponentQuery.query('rallyfieldpicker',this), function(picker) {
-            var fields = picker.getValue(); 
-            
-            value[picker._key] = Ext.Array.map(fields, function(field){
-                return field.get('name');
-            });
-        });
-        
-        return Ext.JSON.encode(value);
+    _onFilterChange: function(inlineFilterButton){
+        var me = this;
+        var filters = inlineFilterButton.getTypesAndFilters().filters;
+        me.updateView(filters);
     },
 
-    _updateGrid: function(){
+    _onFilterReady: function(inlineFilterPanel) {
+        var me = this;
+        me.down('#filter_box').add(inlineFilterPanel);
+    },
+
+
+    _getSelectedPIs: function(selectedPI){
+        var me = this;
+        var config = {
+                        model : selectedPI,
+                        fetch : ['ObjectID'],
+                        //filters : Rally.data.wsapi.Filter.or(story_filters),
+                        limit:'Infinity'
+                    }
+        return me._loadWsapiRecords(config);
+    },
+
+    updateView: function(filters){
         var me = this;
         me.selectedPILevel = [me.down('#selectorType').getValue()];
-        console.log(me.down('#selectorType').getValue());
-        me.setLoading('Loading Grid...');
-        Deft.Promise.all([me._getStories(),me._getPIs()],me).then({
+
+        var pi_object_ids = [];
+
+        me.totalTaskEstimate = 0;
+        me.totalTaskTimeSpent = 0;        
+
+        me._getSelectedPIs(me.selectedPILevel[0]).then({
             success: function(records){
-                me.totalPlanEstimate = 0;
-                me.totalTaskEstimate = 0;
-                me.totalTaskTimeSpent = 0;
-                me.totalAcceptedLeafStoryPlanEstimateTotal = 0;
-
-                var task_filters = [];
-
-                Ext.Array.each(records[0], function(story){
-                    me.totalPlanEstimate += story.get('PlanEstimate');
-                    task_filters.push({property:'WorkProduct.ObjectID',value:story.get('ObjectID')});
+                Ext.Array.each(records,function(pi){
+                    pi_object_ids.push(pi.get('ObjectID'));
                 });
-
-                Ext.Array.each(records[1],function(pi){
-                    me.totalAcceptedLeafStoryPlanEstimateTotal += pi.get('AcceptedLeafStoryPlanEstimateTotal');
-                });
-
-                me._getTasks(task_filters).then({
-                    success: function(records){
-
-                        Ext.Array.each(records, function(task){
-                            me.totalTaskEstimate += task.get('Estimate');
-                            me.totalTaskTimeSpent += task.get('TimeSpent') && task.get('TimeSpent') > 0 ? task.get('TimeSpent') : 0;
+                
+                console.log('all pi objectids',pi_object_ids);
+                me._getTasksFromSnapShotStore(pi_object_ids).then({
+                    success: function(results){
+                        console.log('all taks from snapshot store',results);
+                        me.lb_task_results = results[1];
+                        Ext.Array.each(results[1],function(task){
+                            me.totalTaskEstimate += task.get('Estimate') || 0;
+                            me.totalTaskTimeSpent += task.get('TimeSpent') || 0;
                         });
-
+                        //add tree grid
                         Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
                             models: me.selectedPILevel,
                             autoLoad: true,
                             enableHierarchy: true,
-                            limit:'Infinity'
+                            filters: filters
                         }).then({
-                            success: me._addGridBoard,
+                            success: me._addGrid,
                             scope: me
                         });
 
                     },
                     scope: me
                 });
+
             },
-            scope:me
+            scope: me         
         });
+
     },
 
-    _getPIs: function(){
+
+    getFeatureName: function(){
+        return 'Feature';
+    },
+
+    updateAssociatedData: function(store, node, records, success){
         var me = this;
-        var config = {
-                        model : me.selectedPILevel[0],
-                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal'],
-                        limit:'Infinity',
-                        compact:false
-                    }
-        return me._loadWsapiRecords(config);
+        //me.setLoading("Loading..");
+        this.logger.log('updateAssociatedData', store, node, records, success);
+
+        Ext.Array.each(records,function(r){
+            var totalEstimate = 0;
+            var totalTimeSpent = 0;            
+            Ext.Array.each(me.lb_task_results,function(lbTask){
+                if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
+                    totalEstimate += lbTask.get('Estimate') || 0;
+                    totalTimeSpent += lbTask.get('TimeSpent') || 0;                    
+                }
+            });
+            r.set('Estimate',totalEstimate);
+            r.set('TimeSpent',totalTimeSpent);
+        });
+
+
+        // var promises = []; 
+        // Ext.Array.each(records, function(r){
+        //     promises.push(me._getTasksFromSnapShotStore([r.get('ObjectID')]));
+        // });
+
+        // //Task Estimates & TimeSpent from lookback
+        // Deft.Promise.all(promises,me).then({
+        //     success: function(results){
+        //         console.log('tasks>> promises',results);
+        //         Ext.suspendLayouts();
+        //         Ext.Array.each(records,function(rec){
+        //             Ext.Array.each(results,function(res){
+        //                 if(rec.get('ObjectID') == res[0]){
+        //                     var totalEstimate = 0;
+        //                     var totalTimeSpent = 0;
+        //                     Ext.Array.each(res[1],function(lbRec){
+        //                         totalEstimate += lbRec.get('Estimate') || 0;
+        //                         totalTimeSpent += lbRec.get('TimeSpent') || 0;
+        //                     });
+    
+        //                     rec.set('Estimate',totalEstimate);
+        //                     rec.set('TimeSpent',totalTimeSpent);
+        //                 }
+        //             });
+        //         });
+        //         Ext.resumeLayouts(true);
+        //     },
+        //     scope: me
+        // });
+
     },
 
-    _getStories: function(){
+
+    _getTasksFromSnapShotStore:function(piObjectIDs){
         var me = this;
-        var config = {
-                        model : 'HierarchicalRequirement',
-                        fetch : ['ObjectID', 'PlanEstimate','Feature','Parent','AcceptedLeafStoryPlanEstimateTotal'],
-                        filters : [{
-                            property: 'Feature.Parent.Parent.ObjectID',
-                            operator: '>',
-                            value: 0
-                        }
-                        ],
-                        limit:'Infinity',
-                        compact:false
-                    }
-        return me._loadWsapiRecords(config);
+        var deferred = Ext.create('Deft.Deferred');
+
+        var find = {
+                        "_TypeHierarchy": "Task",
+                        "_ItemHierarchy": { $in: piObjectIDs }
+                    };
+        find["__At"] = "current";
+
+        var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+            "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy"],
+            "find": find,
+            "useHttpPost": true
+        });
+
+        snapshotStore.load({
+            callback: function(records, operation) {
+                deferred.resolve([piObjectIDs,records]);
+            },
+            scope:this
+        });
+    
+        return deferred;
     },
 
-    _getTasks: function(task_filters){
-        var me = this;
-        var config = {
-                        model : 'Task',
-                        fetch : ['ObjectID', 'PlanEstimate','Feature','Parent','ObjectID','WorkProduct','Estimate','TimeSpent'],
-                        filters : Rally.data.wsapi.Filter.or(task_filters),
-                        limit:'Infinity',
-                        compact:false,
-                        enablePostGet:true
-                    }
-        return me._loadWsapiRecords(config);
+    showErrorNotification: function(msg){
+        Rally.ui.notify.Notifier.showError({message: msg});
     },
 
-      
+       
     _loadWsapiRecords: function(config){
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
@@ -206,19 +295,11 @@ Ext.define("TSApp", {
         });
         return deferred.promise;
     },
-    
-    _displayGrid: function(store,field_names){
-        this.down('#display_box').add({
-            xtype: 'rallygrid',
-            store: store,
-            columnCfgs: field_names
-        });
-    },
 
-    _addGridBoard: function (store) {
+    _addGrid: function (store) {
         var me = this;
         console.log('Tree store',store);
-
+        store.on('load', me.updateAssociatedData, me);
         console.log('columns ',me.getValue());
         me.down('#display_box').removeAll();
         me.down('#display_box').add({
@@ -226,113 +307,98 @@ Ext.define("TSApp", {
             context: this.getContext(),
             store: store,
             enableSummaryRow:true,
-            columnCfgs: me._getColumnCfgs(),
-            height: this.getHeight(),
+            columnCfgs: me._getAllColumns(),
+            height: this.getHeight()
         });
         me.setLoading(false);
-        //var me = this;
-
-        // me.add({
-        //     itemId: 'gridboard',
-        //     xtype: 'rallygridboard',
-        //     context: me.getContext(),
-        //     toggleState: 'grid',
-        //     stateful: true,
-        //     modelNames: me.selectedPILevel,
-        //     plugins: [
-        //                     {
-        //                         ptype: 'rallygridboardinlinefiltercontrol',
-        //                         inlineFilterButtonConfig: {
-        //                             modelNames: me.selectedPILevel,
-        //                             inlineFilterPanelConfig: {
-        //                                 quickFilterPanelConfig: {
-        //                                     defaultFields: [
-        //                                         'ArtifactSearch',
-        //                                         'Owner',
-        //                                         'ModelType'
-        //                                     ]
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-        //                 ],
-        //     gridConfig: {
-        //         enableSummaryRow: true,
-        //         columnCfgs: me._getColumnCfgs(),
-        //         store: store
-        //     },
-        //     height: me.getHeight()
-        // });
 
     },
 
-    _getGridBoardPlugins: function () {
+    getValue: function() {
+        var value = {};
+        Ext.Array.each(Ext.ComponentQuery.query('rallyfieldpicker',this), function(picker) {
+            var fields = picker.getValue(); 
+            
+            value[picker._key] = Ext.Array.map(fields, function(field){
+                return field.get('name');
+            });
+        });
+        
+        return Ext.JSON.encode(value);
+    },
+
+    _getAllColumns: function(){
         var me = this;
-        var plugins = [{
-                ptype: 'rallygridboardinlinefiltercontrol',
-                inlineFilterButtonConfig: {
-                    modelNames: me.selectedPILevel,
-                    inlineFilterPanelConfig: {
-                        collapsed: false,
-                        quickFilterPanelConfig: {
-                            fieldNames: ['Owner', 'ScheduleState']
-                        }
-                    }
-                }
-        }];
-
-        // plugins.push({
-        //     ptype: 'rallygridboardfieldpicker',
-        //     headerPosition: 'left',
-        //     modelNames: this.selectedPILevel,
-        //     stateful: true,
-        //     stateId: this.getContext().getScopedStateId('field-picker')
-        // });
-
-        return plugins;
+        var allColumns = me._getColumnCfgs();
+        var selectedValues = me.down('#columnNames') && me.down('#columnNames').selectedValues.keys;
+        var alwaysSelectedValues = me._getSelectedColumns();
+        Ext.Array.each(selectedValues,function(val){
+            if(!Ext.Array.contains(alwaysSelectedValues,val)){
+                allColumns.push({dataIndex:val,text:val});
+            }
+        });
+        return allColumns;
     },
 
     _getColumnCfgs: function(){
         var me = this;
-        console.log('rallyfieldcombobox>>',me.down('#message_box').query('rallyfieldpicker'));
+        console.log('selectedValues>>',me.down('#columnNames') && me.down('#columnNames').selectedValues.keys);
+        console.log('Allowed Values>>',me.down('#columnNames') && me.down('#columnNames').alwaysSelectedValues);
 
         return  [{
             dataIndex: 'Name',
             text: 'Name'
-        },{
+        },
+        {
             dataIndex: 'ScheduleState',
             text: 'Schedule State'
-        },{
+        },
+        {
             dataIndex: 'Owner',
             text: 'Owner'
-        }, {
-            dataIndex: 'PlanEstimate',
-            text: 'Plan Estimate <br/>' + '<b>' + me.totalPlanEstimate +'</b>',
-            summaryType: 'sum',
-            summaryRenderer: function() {
-                return '<b>' + me.totalPlanEstimate +'</b>';
-            }
-        },{
+        },
+        {
             dataIndex: 'Estimate',
             text: 'Task Estimate',
             summaryType: 'sum',
+            renderer: function(Estimate){
+                return Estimate || 0;
+            },
             summaryRenderer: function() {
-                return '<b>' + me.totalTaskEstimate +'</b>';
+                return '<span class="rollup">'+ me.totalTaskEstimate +' Hours</span>';
             }
-        },{
+        },
+        {
             dataIndex: 'TimeSpent',
             text: 'Task Time Spent',
             summaryType: 'sum',
+            renderer: function(TimeSpent){
+                return TimeSpent || 0;
+            },            
             summaryRenderer: function() {
-                return '<b>' + me.totalTaskTimeSpent +'</b>';
+                return '<span class="rollup">'+ me.totalTaskTimeSpent +' Hours</span>';
             }
+        },
+        {
+            dataIndex: 'LeafStoryPlanEstimateTotal',
+            text: 'LeafStory Plan Estimate Total',
+            summaryType: 'sum'
+            //,
+            // summaryRenderer: function() {
+            //     return '<b>' + me.totalLeafStoryPlanEstimateTotal +'</b>';
+            // }
+        },
+        {
+            dataIndex: 'PlanEstimate',
+            text: 'Plan Estimate'
         },
         {
             dataIndex: 'AcceptedLeafStoryPlanEstimateTotal',
             text: 'Accepted LeafStory Plan Estimate Total',
-            summaryType: 'sum',
-            summaryRenderer: function() {
-                return '<b>' + me.totalAcceptedLeafStoryPlanEstimateTotal +'</b>';
+            summaryType: 'sum'
+            ,
+            summaryRenderer: function(AcceptedLeafStoryPlanEstimateTotal) {
+                return '<span class="rollup">'+ AcceptedLeafStoryPlanEstimateTotal +' Points </span>';;
             }
         }];
     },
@@ -343,6 +409,7 @@ Ext.define("TSApp", {
         Ext.Array.each(me._getColumnCfgs(),function(col){
             cols.push(col.dataIndex);
         });
+        console.log('_getSelectedColumns>>', cols)
         return cols;
     },
  
