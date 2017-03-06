@@ -142,7 +142,8 @@ Ext.define('TSApp', {
                 ["Name","StartDate","EndDate"], 
                 query,
                 {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 },
                 "StartDate"
             ).then({
@@ -178,7 +179,8 @@ Ext.define('TSApp', {
                 [
                     { property : "ObjectID", operator : "=", value : app.getContext().getProject().ObjectID }
                 ], {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 },
                 "EndDate"
             ).then({
@@ -212,7 +214,8 @@ Ext.define('TSApp', {
                 true, 
                 filter,
                 {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 }
             ).then({
                 success : function(records) {
