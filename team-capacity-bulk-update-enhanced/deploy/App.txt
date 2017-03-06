@@ -3,13 +3,13 @@
 <head>
     <title>team-capacity-bulk-update-enhanced</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Jan 31 2017 09:55:42 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Mar 06 2017 14:30:20 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Jan 31 2017 09:55:42 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Mon Mar 06 2017 14:30:20 GMT-0800 (PST)";
         var STORY    = "US";
         var BUILDER  = "arajaraman";
-        var CHECKSUM = 23722722565;
+        var CHECKSUM = 23858367477;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -435,7 +435,8 @@ Ext.define('TSApp', {
                 ["Name","StartDate","EndDate"], 
                 query,
                 {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 },
                 "StartDate"
             ).then({
@@ -471,7 +472,8 @@ Ext.define('TSApp', {
                 [
                     { property : "ObjectID", operator : "=", value : app.getContext().getProject().ObjectID }
                 ], {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 },
                 "EndDate"
             ).then({
@@ -505,7 +507,8 @@ Ext.define('TSApp', {
                 true, 
                 filter,
                 {
-                    projectScopeDown : false
+                    projectScopeDown : false,
+                    projectScopeUp : false
                 }
             ).then({
                 success : function(records) {
