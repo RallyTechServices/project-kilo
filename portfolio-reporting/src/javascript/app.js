@@ -19,8 +19,10 @@ Ext.define("TSApp", {
 
     launch: function() {
         var me = this;
-        console.log(me._getSelectedColumns());
+        console.log('in launch');
+
         me._addSelector();
+        
     },
 
     _addSelector: function(){
@@ -34,15 +36,12 @@ Ext.define("TSApp", {
                 margin: '10 10 10 10',                
                 xtype: 'rallyportfolioitemtypecombobox',
                 valueField: 'TypePath',
-                readyEvent: 'ready'
-                ,
+                readyEvent: 'ready',
                 listeners: {
-                    ready: function() {
-                        //me._updateGrid([]);
-                        me.updateView([]);
-                    },
+                    // ready: function() {
+                    //     me.updateView([]);
+                    // },
                     change: function(){
-                        //me._updateGrid([]);
                         me.updateView([]);
                     },
                     scope: me
@@ -62,9 +61,7 @@ Ext.define("TSApp", {
                 fieldBlackList: ['Attachments','Children'],
                 listeners:{
                     select: function(){
-                        //me._updateGrid([]);
                         me.updateView([]);
-
                     },
                     scope:me
                 }
@@ -80,7 +77,7 @@ Ext.define("TSApp", {
                     stateful: true,
                     stateId: me.getContext().getScopedStateId('inline-filter'),
                     context: me.getContext(),
-                    modelNames: ['PortfolioItem'],
+                    modelNames: ['PortfolioItem/Feature'],
                     filterChildren: false,
                     inlineFilterPanelConfig: {
                         quickFilterPanelConfig: {
@@ -94,6 +91,24 @@ Ext.define("TSApp", {
                     } 
                 }
             }
+            // ,
+            // {
+            //     xtype:'rallybutton',
+            //     itemId:'export_button',
+            //     text: 'Download CSV',
+            //     margin:10,
+
+            //     disabled: false,
+            //     iconAlign: 'right',
+            //     listeners: {
+            //         scope: this,
+            //         click: function() {
+            //             me._export();
+            //         }
+            //     },
+            //     margin: '10',
+            //     scope: me
+            // }
         ]);
 
     },
@@ -121,8 +136,49 @@ Ext.define("TSApp", {
         return me._loadWsapiRecords(config);
     },
 
+    _getTasks: function(filters){
+        var me = this;
+        var config = {
+                        model : 'Task',
+                        fetch : ['ObjectID','TimeSpent','Estimate'],
+                        filters : Rally.data.wsapi.Filter.or(filters),
+                        limit:'Infinity',
+                        enablePostGet:true
+                    }
+        return me._loadWsapiRecords(config);
+    },    
+
+    _getPortfolioItemTimeEntries: function(startindex, pagesize){
+        var deferred = Ext.create('Deft.Deferred');
+
+        if (!startindex){
+            startindex = 1;
+        }
+        if (!pagesize){
+            pagesize = 2000;
+        }
+
+        Ext.Ajax.request({
+            url: Ext.String.format("/slm/webservice/v2.0/PortfolioItemTimeEntry?fetch=true&start={1}&pagesize={0}", pagesize, startindex),
+            success: function(response){
+                if (response && response.responseText){
+                    var obj = Ext.JSON.decode(response.responseText);
+                    deferred.resolve(obj);
+                } else {
+                    deferred.resolve(null);
+                }
+            }
+        });
+
+        return deferred.promise;
+    },    
+
     updateView: function(filters){
         var me = this;
+
+        if(!me.down('#selectorType')) return;
+
+        console.log('update view filters',filters);
         me.selectedPILevel = [me.down('#selectorType').getValue()];
 
         var pi_object_ids = [];
@@ -135,24 +191,40 @@ Ext.define("TSApp", {
                 Ext.Array.each(records,function(pi){
                     pi_object_ids.push(pi.get('ObjectID'));
                 });
-                
-                console.log('all pi objectids',pi_object_ids);
+
                 me._getTasksFromSnapShotStore(pi_object_ids).then({
                     success: function(results){
                         console.log('all taks from snapshot store',results);
+                        me.totalTaskEstimate = 0;
                         me.lb_task_results = results[1];
                         Ext.Array.each(results[1],function(task){
                             me.totalTaskEstimate += task.get('Estimate') || 0;
-                            me.totalTaskTimeSpent += task.get('TimeSpent') || 0;
                         });
-                        //add tree grid
-                        Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
-                            models: me.selectedPILevel,
-                            autoLoad: true,
-                            enableHierarchy: true,
-                            filters: filters
-                        }).then({
-                            success: me._addGrid,
+                        var task_filter = [];
+                        Ext.Array.each(results[1], function(task){
+                            task_filter.push({property:'WorkProduct.ObjectID',value:task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]});
+                        });
+
+
+                        me._getTasks(task_filter).then({
+                            success: function(records){
+                                me.totalTaskTimeSpent = 0;
+                                me.taskTimeSpent = {}
+                                Ext.Array.each(records,function(task){
+                                    me.totalTaskTimeSpent += task.get('TimeSpent') || 0;
+                                    me.taskTimeSpent[task.get('ObjectID')] = task.get('TimeSpent') || 0;
+                                });
+                                Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
+                                    models: me.selectedPILevel,
+                                    autoLoad: true,
+                                    enableHierarchy: true,
+                                    filters: filters
+                                }).then({
+                                    success: me._addGrid,
+                                    scope: me
+                                });
+
+                            },
                             scope: me
                         });
 
@@ -166,59 +238,24 @@ Ext.define("TSApp", {
 
     },
 
-
-    getFeatureName: function(){
-        return 'Feature';
-    },
-
-    updateAssociatedData: function(store, node, records, success){
+    _updateAssociatedData: function(store, node, records, success){
         var me = this;
         //me.setLoading("Loading..");
-        this.logger.log('updateAssociatedData', store, node, records, success);
+        //this.logger.log('_updateAssociatedData', store, node, records, success);
 
         Ext.Array.each(records,function(r){
             var totalEstimate = 0;
-            var totalTimeSpent = 0;            
+            var totalTimeSpent = 0;
+
             Ext.Array.each(me.lb_task_results,function(lbTask){
                 if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
                     totalEstimate += lbTask.get('Estimate') || 0;
-                    totalTimeSpent += lbTask.get('TimeSpent') || 0;                    
+                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
                 }
             });
             r.set('Estimate',totalEstimate);
             r.set('TimeSpent',totalTimeSpent);
         });
-
-
-        // var promises = []; 
-        // Ext.Array.each(records, function(r){
-        //     promises.push(me._getTasksFromSnapShotStore([r.get('ObjectID')]));
-        // });
-
-        // //Task Estimates & TimeSpent from lookback
-        // Deft.Promise.all(promises,me).then({
-        //     success: function(results){
-        //         console.log('tasks>> promises',results);
-        //         Ext.suspendLayouts();
-        //         Ext.Array.each(records,function(rec){
-        //             Ext.Array.each(results,function(res){
-        //                 if(rec.get('ObjectID') == res[0]){
-        //                     var totalEstimate = 0;
-        //                     var totalTimeSpent = 0;
-        //                     Ext.Array.each(res[1],function(lbRec){
-        //                         totalEstimate += lbRec.get('Estimate') || 0;
-        //                         totalTimeSpent += lbRec.get('TimeSpent') || 0;
-        //                     });
-    
-        //                     rec.set('Estimate',totalEstimate);
-        //                     rec.set('TimeSpent',totalTimeSpent);
-        //                 }
-        //             });
-        //         });
-        //         Ext.resumeLayouts(true);
-        //     },
-        //     scope: me
-        // });
 
     },
 
@@ -261,7 +298,7 @@ Ext.define("TSApp", {
             model: 'Defect',
             fetch: ['ObjectID']
         };
-        this.logger.log("Starting load:",config.model);
+        // this.logger.log("Starting load:",config.model);
         Ext.create('Rally.data.wsapi.Store', Ext.Object.merge(default_config,config)).load({
             callback : function(records, operation, successful) {
                 if (successful){
@@ -298,20 +335,24 @@ Ext.define("TSApp", {
 
     _addGrid: function (store) {
         var me = this;
-        console.log('Tree store',store);
-        store.on('load', me.updateAssociatedData, me);
-        console.log('columns ',me.getValue());
+        //console.log('Tree store',store);
+        store.on('load', me._updateAssociatedData, me);
+        //console.log('columns ',me.getValue());
         me.down('#display_box').removeAll();
         me.down('#display_box').add({
             xtype: 'rallytreegrid',
+            // stateful:true,
+            // stateId:me.getContext().getScopedStateId('pi_task_rollup_grid'),
             context: this.getContext(),
             store: store,
+            enableEditing: false,
             enableSummaryRow:true,
+            scroll:'none',
+            autoScroll:false,
             columnCfgs: me._getAllColumns(),
-            height: this.getHeight()
+            height:this.getHeight()
         });
         me.setLoading(false);
-
     },
 
     getValue: function() {
@@ -342,8 +383,8 @@ Ext.define("TSApp", {
 
     _getColumnCfgs: function(){
         var me = this;
-        console.log('selectedValues>>',me.down('#columnNames') && me.down('#columnNames').selectedValues.keys);
-        console.log('Allowed Values>>',me.down('#columnNames') && me.down('#columnNames').alwaysSelectedValues);
+        // console.log('selectedValues>>',me.down('#columnNames') && me.down('#columnNames').selectedValues.keys);
+        // console.log('Allowed Values>>',me.down('#columnNames') && me.down('#columnNames').alwaysSelectedValues);
 
         return  [{
             dataIndex: 'Name',
@@ -362,10 +403,10 @@ Ext.define("TSApp", {
             text: 'Task Estimate',
             summaryType: 'sum',
             renderer: function(Estimate){
-                return Estimate || 0;
+                return Ext.Number.toFixed(Estimate || 0,2);
             },
             summaryRenderer: function() {
-                return '<span class="rollup">'+ me.totalTaskEstimate +' Hours</span>';
+                return '<span class="rollup">'+ Ext.Number.toFixed(me.totalTaskEstimate,2) +' Hours</span>';
             }
         },
         {
@@ -373,10 +414,10 @@ Ext.define("TSApp", {
             text: 'Task Time Spent',
             summaryType: 'sum',
             renderer: function(TimeSpent){
-                return TimeSpent || 0;
+                return Ext.Number.toFixed(TimeSpent || 0,2);
             },            
             summaryRenderer: function() {
-                return '<span class="rollup">'+ me.totalTaskTimeSpent +' Hours</span>';
+                return '<span class="rollup">'+ Ext.Number.toFixed(me.totalTaskTimeSpent,2) +' Hours</span>';
             }
         },
         {
@@ -398,9 +439,35 @@ Ext.define("TSApp", {
             summaryType: 'sum'
             ,
             summaryRenderer: function(AcceptedLeafStoryPlanEstimateTotal) {
-                return '<span class="rollup">'+ AcceptedLeafStoryPlanEstimateTotal +' Points </span>';;
+                return '<span class="rollup">'+ Ext.Number.toFixed(AcceptedLeafStoryPlanEstimateTotal,2) +' Points </span>';;
             }
         }];
+    },
+
+    _export: function(){
+        var grid = this.down('rallytreegrid');
+        var me = this;
+
+        if ( !grid ) { return; }
+        
+        this.logger.log('_export',grid);
+        window.location = Rally.ui.gridboard.Export.buildCsvExportUrl(grid);
+        //var filename = Ext.String.format('portfolio_report.csv');
+
+        // this.setLoading("Generating CSV");
+        // Deft.Chain.sequence([
+        //     function() { return Rally.technicalservices.FileUtilities._getCSVFromWsapiBackedGrid(grid) } 
+        // ]).then({
+        //     scope: this,
+        //     success: function(csv){
+        //         if (csv && csv.length > 0){
+        //             Rally.technicalservices.FileUtilities.saveCSVToFile(csv,filename);
+        //         } else {
+        //             Rally.ui.notify.Notifier.showWarning({message: 'No data to export'});
+        //         }
+                
+        //     }
+        // }).always(function() { me.setLoading(false); });
     },
 
     _getSelectedColumns: function(){
@@ -409,7 +476,7 @@ Ext.define("TSApp", {
         Ext.Array.each(me._getColumnCfgs(),function(col){
             cols.push(col.dataIndex);
         });
-        console.log('_getSelectedColumns>>', cols)
+        // console.log('_getSelectedColumns>>', cols)
         return cols;
     },
  
