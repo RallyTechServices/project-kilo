@@ -85,11 +85,11 @@ Ext.define('PTApp', {
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
                             break;
                         case 'This Month':
-                            start = new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
+                            start = new Date((dt.getMonth() + 1) + "/1/" + dt.getFullYear());//new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
                             end = Ext.Date.subtract(Ext.Date.add(start, Ext.Date.MONTH, 1), Ext.Date.MILLI, 1);
                             break;
                         case 'Last Month':
-                            start = new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
+                            start = new Date((dt.getMonth() + 1) + "/1/" + dt.getFullYear());//new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
                             start = Ext.Date.subtract(start, Ext.Date.MONTH, 1);
                             end = Ext.Date.subtract(Ext.Date.add(start, Ext.Date.MONTH, 1), Ext.Date.MILLI, 1);
                             break;
@@ -414,6 +414,7 @@ Ext.define('PTApp', {
                 ftype: 'summary'
             }],
             store: store,
+            height:this.getHeight(),
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {
@@ -429,6 +430,7 @@ Ext.define('PTApp', {
                     return {
                         text: f.displayName,
                         dataIndex: f.name,
+                        // locked:true,
                         flex: 1,
                         summaryType: 'count',
                         summaryRenderer: function(value, summaryData, dataIndex) {

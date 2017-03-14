@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jan 27 2017 17:14:51 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Mar 13 2017 17:04:55 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jan 27 2017 17:14:51 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Mon Mar 13 2017 17:04:55 GMT-0700 (PDT)";
         var STORY    = "US8846";
-        var BUILDER  = "arajaraman";
-        var CHECKSUM = 116097103938;
+        var BUILDER  = "rajan08";
+        var CHECKSUM = 116700867997;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -1537,11 +1537,11 @@ Ext.define('PTApp', {
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
                             break;
                         case 'This Month':
-                            start = new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
+                            start = new Date((dt.getMonth() + 1) + "/1/" + dt.getFullYear());//new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
                             end = Ext.Date.subtract(Ext.Date.add(start, Ext.Date.MONTH, 1), Ext.Date.MILLI, 1);
                             break;
                         case 'Last Month':
-                            start = new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
+                            start = new Date((dt.getMonth() + 1) + "/1/" + dt.getFullYear());//new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
                             start = Ext.Date.subtract(start, Ext.Date.MONTH, 1);
                             end = Ext.Date.subtract(Ext.Date.add(start, Ext.Date.MONTH, 1), Ext.Date.MILLI, 1);
                             break;
@@ -1866,6 +1866,7 @@ Ext.define('PTApp', {
                 ftype: 'summary'
             }],
             store: store,
+            height:this.getHeight(),
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {
@@ -1881,6 +1882,7 @@ Ext.define('PTApp', {
                     return {
                         text: f.displayName,
                         dataIndex: f.name,
+                        // locked:true,
                         flex: 1,
                         summaryType: 'count',
                         summaryRenderer: function(value, summaryData, dataIndex) {

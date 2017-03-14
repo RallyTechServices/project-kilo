@@ -70,20 +70,6 @@ Ext.override(Rally.ui.grid.TreeGrid, {
     }
 });
 
-// Ext.override(Rally.ui.renderer.RendererFactory, {
-
-//     typeFieldTemplates: {
-//         hierarchicalrequirement: {
-//             Estimate: function(field){
-//                 return 5;
-//             },
-//             TimeSpent: function(field){
-//                 return 5;
-//             },            
-//         }
-//     }
-
-// });
 
 Ext.override(Rally.data.wsapi.TreeStore, {
     _getChildNodeFilters: function(node) {
