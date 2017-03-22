@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Mar 13 2017 16:30:59 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Mar 22 2017 13:18:44 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Mar 13 2017 16:30:59 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Mar 22 2017 13:18:44 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 49538639086;
+        var CHECKSUM = 9068326036;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -21,247 +21,6 @@
     <script type="text/javascript">
         Rally.onReady(function() {
              
-/* FileSaver.js
- *  A saveAs() FileSaver implementation.
- *  2014-05-27
- *
- *  By Eli Grey, http://eligrey.com
- *  License: X11/MIT
- *    See https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md
- */
-
-/*global self */
-/*jslint bitwise: true, indent: 4, laxbreak: true, laxcomma: true, smarttabs: true, plusplus: true */
-
-/*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
-
-var saveAs = saveAs
-  // IE 10+ (native saveAs)
-  || (typeof navigator !== "undefined" &&
-      navigator.msSaveOrOpenBlob && navigator.msSaveOrOpenBlob.bind(navigator))
-  // Everyone else
-  || (function(view) {
-    "use strict";
-    // IE <10 is explicitly unsupported
-    if (typeof navigator !== "undefined" &&
-        /MSIE [1-9]\./.test(navigator.userAgent)) {
-        return;
-    }
-    var
-          doc = view.document
-          // only get URL when necessary in case Blob.js hasn't overridden it yet
-        , get_URL = function() {
-            return view.URL || view.webkitURL || view;
-        }
-        , save_link = doc.createElementNS("http://www.w3.org/1999/xhtml", "a")
-        , can_use_save_link = !view.externalHost && "download" in save_link
-        , click = function(node) {
-            var event = doc.createEvent("MouseEvents");
-            event.initMouseEvent(
-                "click", true, false, view, 0, 0, 0, 0, 0
-                , false, false, false, false, 0, null
-            );
-            node.dispatchEvent(event);
-        }
-        , webkit_req_fs = view.webkitRequestFileSystem
-        , req_fs = view.requestFileSystem || webkit_req_fs || view.mozRequestFileSystem
-        , throw_outside = function(ex) {
-            (view.setImmediate || view.setTimeout)(function() {
-                throw ex;
-            }, 0);
-        }
-        , force_saveable_type = "application/octet-stream"
-        , fs_min_size = 0
-        , deletion_queue = []
-        , process_deletion_queue = function() {
-            var i = deletion_queue.length;
-            while (i--) {
-                var file = deletion_queue[i];
-                if (typeof file === "string") { // file is an object URL
-                    get_URL().revokeObjectURL(file);
-                } else { // file is a File
-                    file.remove();
-                }
-            }
-            deletion_queue.length = 0; // clear queue
-        }
-        , dispatch = function(filesaver, event_types, event) {
-            event_types = [].concat(event_types);
-            var i = event_types.length;
-            while (i--) {
-                var listener = filesaver["on" + event_types[i]];
-                if (typeof listener === "function") {
-                    try {
-                        listener.call(filesaver, event || filesaver);
-                    } catch (ex) {
-                        throw_outside(ex);
-                    }
-                }
-            }
-        }
-        , FileSaver = function(blob, name) {
-            // First try a.download, then web filesystem, then object URLs
-            var
-                  filesaver = this
-                , type = blob.type
-                , blob_changed = false
-                , object_url
-                , target_view
-                , get_object_url = function() {
-                    var object_url = get_URL().createObjectURL(blob);
-                    deletion_queue.push(object_url);
-                    return object_url;
-                }
-                , dispatch_all = function() {
-                    dispatch(filesaver, "writestart progress write writeend".split(" "));
-                }
-                // on any filesys errors revert to saving with object URLs
-                , fs_error = function() {
-                    // don't create more object URLs than needed
-                    if (blob_changed || !object_url) {
-                        object_url = get_object_url(blob);
-                    }
-                    if (target_view) {
-                        target_view.location.href = object_url;
-                    } else {
-                        window.open(object_url, "_blank");
-                    }
-                    filesaver.readyState = filesaver.DONE;
-                    dispatch_all();
-                }
-                , abortable = function(func) {
-                    return function() {
-                        if (filesaver.readyState !== filesaver.DONE) {
-                            return func.apply(this, arguments);
-                        }
-                    };
-                }
-                , create_if_not_found = {create: true, exclusive: false}
-                , slice
-            ;
-            filesaver.readyState = filesaver.INIT;
-            if (!name) {
-                name = "download";
-            }
-            if (can_use_save_link) {
-                object_url = get_object_url(blob);
-                save_link.href = object_url;
-                save_link.download = name;
-                click(save_link);
-                filesaver.readyState = filesaver.DONE;
-                dispatch_all();
-                return;
-            }
-            // Object and web filesystem URLs have a problem saving in Google Chrome when
-            // viewed in a tab, so I force save with application/octet-stream
-            // http://code.google.com/p/chromium/issues/detail?id=91158
-            if (view.chrome && type && type !== force_saveable_type) {
-                slice = blob.slice || blob.webkitSlice;
-                blob = slice.call(blob, 0, blob.size, force_saveable_type);
-                blob_changed = true;
-            }
-            // Since I can't be sure that the guessed media type will trigger a download
-            // in WebKit, I append .download to the filename.
-            // https://bugs.webkit.org/show_bug.cgi?id=65440
-            if (webkit_req_fs && name !== "download") {
-                name += ".download";
-            }
-            if (type === force_saveable_type || webkit_req_fs) {
-                target_view = view;
-            }
-            if (!req_fs) {
-                fs_error();
-                return;
-            }
-            fs_min_size += blob.size;
-            req_fs(view.TEMPORARY, fs_min_size, abortable(function(fs) {
-                fs.root.getDirectory("saved", create_if_not_found, abortable(function(dir) {
-                    var save = function() {
-                        dir.getFile(name, create_if_not_found, abortable(function(file) {
-                            file.createWriter(abortable(function(writer) {
-                                writer.onwriteend = function(event) {
-                                    target_view.location.href = file.toURL();
-                                    deletion_queue.push(file);
-                                    filesaver.readyState = filesaver.DONE;
-                                    dispatch(filesaver, "writeend", event);
-                                };
-                                writer.onerror = function() {
-                                    var error = writer.error;
-                                    if (error.code !== error.ABORT_ERR) {
-                                        fs_error();
-                                    }
-                                };
-                                "writestart progress write abort".split(" ").forEach(function(event) {
-                                    writer["on" + event] = filesaver["on" + event];
-                                });
-                                writer.write(blob);
-                                filesaver.abort = function() {
-                                    writer.abort();
-                                    filesaver.readyState = filesaver.DONE;
-                                };
-                                filesaver.readyState = filesaver.WRITING;
-                            }), fs_error);
-                        }), fs_error);
-                    };
-                    dir.getFile(name, {create: false}, abortable(function(file) {
-                        // delete file if it already exists
-                        file.remove();
-                        save();
-                    }), abortable(function(ex) {
-                        if (ex.code === ex.NOT_FOUND_ERR) {
-                            save();
-                        } else {
-                            fs_error();
-                        }
-                    }));
-                }), fs_error);
-            }), fs_error);
-        }
-        , FS_proto = FileSaver.prototype
-        , saveAs = function(blob, name) {
-            return new FileSaver(blob, name);
-        }
-    ;
-    FS_proto.abort = function() {
-        var filesaver = this;
-        filesaver.readyState = filesaver.DONE;
-        dispatch(filesaver, "abort");
-    };
-    FS_proto.readyState = FS_proto.INIT = 0;
-    FS_proto.WRITING = 1;
-    FS_proto.DONE = 2;
-
-    FS_proto.error =
-    FS_proto.onwritestart =
-    FS_proto.onprogress =
-    FS_proto.onwrite =
-    FS_proto.onabort =
-    FS_proto.onerror =
-    FS_proto.onwriteend =
-        null;
-
-    view.addEventListener("unload", process_deletion_queue, false);
-    saveAs.unload = function() {
-        process_deletion_queue();
-        view.removeEventListener("unload", process_deletion_queue, false);
-    };
-    return saveAs;
-}(
-       typeof self !== "undefined" && self
-    || typeof window !== "undefined" && window
-    || this.content
-));
-// `self` is undefined in Firefox for Android content script context
-// while `this` is nsIContentFrameMessageManager
-// with an attribute `content` that corresponds to the window
-
-if (typeof module !== "undefined" && module !== null) {
-  module.exports = saveAs;
-} else if ((typeof define !== "undefined" && define !== null) && (define.amd != null)) {
-  define([], function() {
-    return saveAs;
-  });
-}
 /**
  * A link that pops up a version dialog box
  */
@@ -455,382 +214,6 @@ Ext.define('Rally.technicalservices.Logger',{
 
 });
 
-Ext.define('Rally.technicalservices.FileUtilities', {
-    singleton: true,
-    logger: new Rally.technicalservices.Logger(),
-    saveCSVToFile:function(csv,file_name,type_object){
-            if (type_object == undefined){
-                type_object = {type:'text/csv;charset=utf-8'};
-            }
-            var blob = new Blob([csv],type_object);
-            saveAs(blob,file_name);
-    },
-    saveTextAsFile: function(textToWrite, fileName) {
-        var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
-        var fileNameToSaveAs = fileName;
-
-        var downloadLink = document.createElement("a");
-        downloadLink.download = fileNameToSaveAs;
-        downloadLink.innerHTML = "Download File";
-        if (window.webkitURL != null)
-        {
-            // Chrome allows the link to be clicked
-            // without actually adding it to the DOM.
-            downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
-        }
-        else
-        {
-            // Firefox requires the link to be added to the DOM
-            // before it can be clicked.
-            downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
-            downloadLink.onclick = destroyClickedElement;
-            downloadLink.style.display = "none";
-            document.body.appendChild(downloadLink);
-        }
-        downloadLink.click();
-    },
-    destroyClickedElement: function(event)
-    {
-        document.body.removeChild(event.target);
-    },
-    convertDataArrayToCSVText: function(data_array, requestedFieldHash){
-       
-        var text = '';
-        Ext.each(Object.keys(requestedFieldHash), function(key){
-            text += requestedFieldHash[key] + ',';
-        });
-        text = text.replace(/,$/,'\n');
-        
-        Ext.each(data_array, function(d){
-            Ext.each(Object.keys(requestedFieldHash), function(key){
-                if (d[key]){
-                    if (typeof d[key] === 'object'){
-                        if (d[key].FormattedID) {
-                            text += Ext.String.format("\"{0}\",",d[key].FormattedID ); 
-                        } else if (d[key].Name) {
-                            text += Ext.String.format("\"{0}\",",d[key].Name );                    
-                        } else if (!isNaN(Date.parse(d[key]))){
-                            text += Ext.String.format("\"{0}\",",Rally.util.DateTime.formatWithDefaultDateTime(d[key]));
-                        }else {
-                            text += Ext.String.format("\"{0}\",",d[key].toString());
-                        }
-                    } else {
-                        text += Ext.String.format("\"{0}\",",d[key] );                    
-                    }
-                } else {
-                    text += ',';
-                }
-            },this);
-            text = text.replace(/,$/,'\n');
-        },this);
-        return text;
-    },
-    _getCSVFromWsapiBackedGrid: function(grid) {
-        var deferred = Ext.create('Deft.Deferred');
-        var store = grid.store;
-        // var store = Ext.create('Rally.data.wsapi.TreeStore',{
-        //     fetch: grid.getStore().config.fetch,
-        //     filters: grid.getStore().config.filters,
-        //     model: grid.getStore().config.model,
-        //     limit:Infinity,
-        //     pageSize: Infinity
-
-        // });
-        
-        var columns = grid.columns;
-        var headers = this._getHeadersFromGrid(grid);
-        var column_names = this._getColumnNamesFromGrid(grid);
-        
-        var record_count = grid.getStore().getTotalCount(),
-            page_size = grid.getStore().pageSize,
-            pages = Math.ceil(record_count/page_size),
-            promises = [];
-
-        for (var page = 1; page <= pages; page ++ ) {
-            promises.push(this.loadStorePage(grid, store, columns, page, pages));
-        }
-        Deft.Promise.all(promises).then({
-            success: function(csvs){
-                var csv = [];
-                csv.push('"' + headers.join('","') + '"');
-                _.each(csvs, function(c){
-                    _.each(c, function(line){
-                        csv.push(line);
-                    });
-                });
-                csv = csv.join('\r\n');
-                deferred.resolve(csv);
-                Rally.getApp().setLoading(false);
-            }
-        });
-        return deferred.promise;
-    },
-
-    // custom grid assumes there store is fully loaded
-    _getCSVFromCustomBackedGridWithPaging: function(grid) {
-        var deferred = Ext.create('Deft.Deferred');
-
-
-        var store = Ext.create('Rally.data.custom.Store',{
-            model: grid.getStore().config.model,
-            filters: grid.getStore().config.filters,
-            limit:Infinity,
-            pageSize: Infinity
-        });
-
-        var columns = grid.columns;
-        var headers = this._getHeadersFromGrid(grid);
-        var column_names = this._getColumnNamesFromGrid(grid);
-        
-        var record_count = grid.getStore().getTotalCount(),
-            page_size = grid.getStore().pageSize,
-            pages = Math.ceil(record_count/page_size),
-            promises = [];
-
-        // for (var page = 1; page <= pages; page ++ ) {
-        //     promises.push(this.loadStorePage(grid, store, columns, page, pages));
-        // }
-
-        promises.push(this.loadStorePage(grid, store, columns, page, pages));
-
-        Deft.Promise.all(promises).then({
-            success: function(csvs){
-                var csv = [];
-                csv.push('"' + headers.join('","') + '"');
-                _.each(csvs, function(c){
-                    _.each(c, function(line){
-                        csv.push(line);
-                    });
-                });
-                csv = csv.join('\r\n');
-                deferred.resolve(csv);
-                Rally.getApp().setLoading(false);
-            }
-        });
-        return deferred.promise;
-
-        // var headers = this._getHeadersFromGrid(grid);
-        
-        // var columns = grid.columns;
-        // var column_names = this._getColumnNamesFromGrid(grid);
-
-       
-        // var csv = [];
-        // csv.push('"' + headers.join('","') + '"');
-
-        // var number_of_records = store.getTotalCount();
-        
-        // this.logger.log("Number of records to export:", number_of_records);
-        
-        // for (var i = 0; i < number_of_records; i++) {
-        //     var record = store.getAt(i);
-        //     if ( ! record ) {
-        //         this.logger.log("Number or lines in CSV:", csv.length);
-        //         return csv.join('\r\n');            }
-        //     csv.push( this._getCSVFromRecord(record, grid, store) );
-        // }
-        
-        // this.logger.log("Number or lines in CSV:", csv.length);
-        // return csv.join('\r\n');
-    },
-
-    
-    // custom grid assumes there store is fully loaded
-    _getCSVFromCustomBackedGrid: function(grid) {
-    var deferred = Ext.create('Deft.Deferred');
-            var me = this;
-            
-            Rally.getApp().setLoading("Assembling data for export...");
-            
-            var headers = this._getHeadersFromGrid(grid);
-            var store = Ext.clone( grid.getStore() );
-            var columns = grid.columns;
-            var column_names = this._getColumnNamesFromGrid(grid);
-            
-            var record_count = grid.getStore().getTotalCount();
-            var original_page_size = grid.getStore().pageSize;
-            
-            var page_size = 20000;
-            var number_of_pages = Math.ceil(record_count/page_size);
-            store.pageSize = page_size;
-            
-            var pages = [],
-                promises = [];
-
-            for (var page = 1; page <= number_of_pages; page ++ ) {
-                pages.push(page);
-            }
-            
-            Ext.Array.each(pages, function(page) {
-                promises.push(function() { 
-                    return me._loadStorePage(grid, store, columns, page, pages.length )
-                });
-            });
-            
-            Deft.Chain.sequence(promises).then({
-                success: function(csvs){
-
-                    // set page back to last view
-                    store.pageSize = original_page_size;
-                    store.loadPage(1);
-                    
-                    var csv = [];
-                    csv.push('"' + headers.join('","') + '"');
-                    _.each(csvs, function(c){
-                        _.each(c, function(line){
-                            csv.push(line);
-                        });
-                    });
-                    csv = csv.join('\r\n');
-                    deferred.resolve(csv);
-                    Rally.getApp().setLoading(false);
-                }
-            });
-            
-            return deferred.promise;
-    },
-    
-
-
-    _loadStorePage: function(grid, store, columns, page, total_pages){
-        var deferred = Ext.create('Deft.Deferred');
-
-        store.loadPage(page, {
-            callback: function (records) {
-                var csv = [];
-                for (var i = 0; i < records.length; i++) {
-                    // if(i==0){
-                    //     Rally.getApp().setLoading("Loading page "+page+ " of "+total_pages);
-                    // }
-                    var record = records[i];
-                    csv.push( this._getCSVFromRecord(record, grid, store) );
-                }
-                deferred.resolve(csv);
-            },
-            scope: this
-        });
-        this.logger.log("_loadStorePage", page, " of ", total_pages);
-        return deferred.promise;
-    },
-
-
-    _getHeadersFromGrid: function(grid) {
-        var headers = [];        
-        var columns = grid.columns;
-
-        Ext.Array.each(columns,function(column){
-            if ( column.dataIndex || column.renderer ) {
-                if ( column.csvText ) {
-                    headers.push(column.csvText.replace('&nbsp;',' '));
-                } else if ( column.text )  {
-                    headers.push(column.text.replace('&nbsp;',' '));
-                }
-            }
-        });
-        
-        return headers;
-    },
-    
-    _getColumnNamesFromGrid: function(grid) {
-        var names = [];
-        var columns = grid.columns;
-
-        Ext.Array.each(columns,function(column){
-            if ( column.dataIndex || column.renderer ) {
-                names.push(column.dataIndex);
-            }
-        });
-        
-        return names;
-    },
-    /*
-     * will render using your grid renderer.  If you want it to ignore the grid renderer, 
-     * have the column set _csvIgnoreRender: true
-     */
-    getCSVFromGrid:function(app, grid){
-        this.logger.log("Exporting grid with store type:", Ext.getClassName(grid.getStore()));
-        
-        if ( Ext.getClassName(grid.getStore()) != "Rally.data.custom.Store" ) {
-            return this._getCSVFromWsapiBackedGrid(grid);
-        }
-        
-        return this._getCSVFromCustomBackedGrid(grid);
-    },
-
-    loadStorePage: function(grid, store, columns, page, total_pages){
-        console.log('Inside loadStorePage');
-        var deferred = Ext.create('Deft.Deferred');
-        this.logger.log('loadStorePage',page, total_pages);
-
-        store.loadPage(page, {
-            callback: function (records, operation, success) {
-                //console.log(' page records length',records.length,'success',success);
-                var csv = [];
-                Rally.getApp().setLoading(Ext.String.format('Page {0} of {1} loaded',page, total_pages));
-                for (var i = 0; i < records.length; i++) {
-                    var record = records[i];
-                    csv.push( this._getCSVFromRecord(record, grid, store) );
-                }
-                deferred.resolve(csv);
-            },
-            scope: this
-        });
-        return deferred;
-    },
-    
-    _getCSVFromRecord: function(record, grid, store) {
-        var mock_meta_data = {
-            align: "right",
-            classes: [],
-            cellIndex: 9,
-            column: null,
-            columnIndex: 9,
-            innerCls: undefined,
-            recordIndex: 5,
-            rowIndex: 5,
-            style: "",
-            tdAttr: "",
-            tdCls: "x-grid-cell x-grid-td x-grid-cell-headerId-gridcolumn-1029 x-grid-cell-last x-unselectable",
-            unselectableAttr: "unselectable='on'"
-        };
-        
-        var node_values = [];
-        var columns = grid.columns;
-        //console.log('inside _getCSVFromRecord');
-        Ext.Array.each(columns, function (column) {
-            if (column.xtype != 'rallyrowactioncolumn') {
-                if (column.dataIndex) {
-                    var column_name = column.dataIndex;
-                    
-                    var display_value = record.get(column_name);
-
-                    if (!column._csvIgnoreRender && column.renderer) {
-                        if (column.exportRenderer) {
-                            display_value = column.exportRenderer(display_value, mock_meta_data, record, 0, 0, store, grid.getView());
-                        } else {
-                            display_value = column.renderer(display_value, mock_meta_data, record, 0, 0, store, grid.getView());
-                        }
-                    }
-                    node_values.push(display_value ? display_value.replace(/"/g, '""') : display_value);
-                } else {
-                    var display_value = null;
-                    if (!column._csvIgnoreRender && column.renderer) {
-                        if (column.exportRenderer) {
-                            display_value = column.exportRenderer(display_value, mock_meta_data, record, record, 0, 0, store, grid.getView());
-                        } else {
-                            display_value = column.renderer(display_value, mock_meta_data, record, record, 0, 0, store, grid.getView());
-                        }
-                        node_values.push(display_value ? display_value.replace(/"/g, '""') : display_value);
-                    }
-                }
-
-            }
-        }, this);
-        console.log('Node values',node_values);
-        return '"' + node_values.join('","') + '"';
-    }
-
-});
 Ext.override(Rally.data.wsapi.TreeStore,{
     _decorateModels: function() {
         var models = this.model;
@@ -854,105 +237,14 @@ Ext.override(Rally.data.wsapi.TreeStore,{
         _.each(Ext.Array.from(models), Rally.ui.grid.data.NodeInterface.decorate, Rally.ui.grid.data.NodeInterface);
     }
 });
-
-Ext.override(Rally.ui.grid.TreeGrid, {
-    _mergeColumnConfigs: function(newColumns, oldColumns) {
-
-        var mergedColumns= _.map(newColumns, function(newColumn) {
-            var oldColumn = _.find(oldColumns, {dataIndex: this._getColumnName(newColumn)});
-            if (oldColumn) {
-                return this._getColumnConfigFromColumn(oldColumn);
-            }
-
-            return newColumn;
-        }, this);
-        mergedColumns = mergedColumns.concat(this.config.derivedColumns);
-        return mergedColumns;
-    },
-    _getColumnConfigsBasedOnCurrentOrder: function(columnConfigs) {
-        var cols = _(this.headerCt.items.getRange()).map(function(column) {
-            //override:  Added additional search for column.text
-            return _.contains(columnConfigs, column.dataIndex) ? column.dataIndex : _.find(columnConfigs, {xtype: column.xtype, text: column.text });
-        }).compact().value();
-
-        return cols;
-    },
-    _restoreColumnOrder: function(columnConfigs) {
-
-        var currentColumns = this._getColumnConfigsBasedOnCurrentOrder(columnConfigs);
-        var addedColumns = _.filter(columnConfigs, function(config) {
-            return !_.find(currentColumns, {dataIndex: config.dataIndex}) || Ext.isString(config);
-        });
-        return currentColumns.concat(addedColumns);
-    },
-    _applyStatefulColumns: function(columns) {
-        if (this.alwaysShowDefaultColumns) {
-            _.each(this.columnCfgs, function(columnCfg) {
-                if (!_.any(columns, {dataIndex: this._getColumnName(columnCfg)})) {
-                    columns.push(columnCfg);
-                }
-            }, this);
-        }
-
-        if (this.config && this.config.derivedColumns){
-            this.columnCfgs = columns.concat(this.config.derivedColumns);
-        } else {
-            this.columnCfgs = columns;
-        }
-
-    }
-});
-
-
-Ext.override(Rally.data.wsapi.TreeStore, {
-    _getChildNodeFilters: function(node) {
-        var parentType = node.self.typePath,
-            childTypes = this._getChildTypePaths([parentType]),
-            parentFieldNames = this._getParentFieldNames(childTypes, parentType);
-        //console.log('_getChildNodeFilters', node, this.childFilters, parentType);
-        if (parentFieldNames.length) {
-            var filters =  Rally.data.wsapi.Filter.or(_.map(parentFieldNames, function(parentFieldName) {
-                return {
-                    property: parentFieldName,
-                    operator: '=',
-                    value: node.get('_ref')
-                };
-            }));
-            if (this.childFilters && this.childFilters[parentType]){
-                return [filters.and(this.childFilters[parentType])];
-            }
-            return [filters];
-        }
-        return [];
-    }
-});
-
-Ext.override(Rally.ui.grid.plugin.TreeGridChildPager, {
-    _storeHasMoreChildPages: function(parentRecord) {
-        var loadedCount = this._getLoadedCount(parentRecord);
-        var childPageSize = this.cmp.getStore().getChildPageSize(parentRecord);
-        return parentRecord.get('leafCount') > loadedCount && loadedCount >= childPageSize;
-    }
-});
-
-Ext.override(Rally.ui.grid.TreeView, {
-    _expandHandler: function(node, children){
-        if (this.getTreeStore().getRootNode() !== node && children.length === 0){
-            this.refresh(); //treegrid freaks out when it tries to expand a node that has no children, so force a refresh
-            if (!this.getTreeStore().hasErrors()){
-                Rally.ui.notify.Notifier.showWarning({message:node.get('FormattedID') + ' may have children that are not displayed due to the Feature Query Filter in the App Settings.'});
-            }
-        }
-    },
-});
 Ext.define("TSApp", {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
     items: [
-        {xtype:'container',itemId:'message_box',layout:{type:'hbox'}},
-        {xtype:'container',itemId:'filter_box'},        
+        {xtype:'container',itemId:'top_box',layout:{type:'hbox'},items: [{xtype:'container',itemId:'message_box',layout:{type:'hbox'}},
+                {xtype:'container',itemId:'totals_box', layout:{type:'hbox',align: 'right'}}]},
         {xtype:'container',itemId:'display_box'}
     ],
 
@@ -960,13 +252,11 @@ Ext.define("TSApp", {
         name : "TSApp"
     },
     
-    selectedPILevel: ['PortfolioItem/Feature'],
-
-    modelNames: ['PortfolioItem','HierarchicalRequirement','Task'],
+    selectedPILevel: null,
 
     launch: function() {
         var me = this;
-        console.log('in launch');
+        //console.log('in launch');
 
         me._addSelector();
         
@@ -977,98 +267,28 @@ Ext.define("TSApp", {
         me.down('#message_box').add([{
                 name: 'selectorType',
                 itemId: 'selectorType',
+                stateful: true,
+                stateId: me.getContext().getScopedStateId('selectorType'),                
                 fieldLabel: 'Select PI Type:',
                 width: 450,
                 labelWidth: 100,
                 margin: '10 10 10 10',                
                 xtype: 'rallyportfolioitemtypecombobox',
                 valueField: 'TypePath',
-                readyEvent: 'ready',
+                readyEvent: 'ready'
+            },
+            {
+                xtype: 'rallybutton',
+                text: 'Go',
+                margin: '10 10 10 10',                
+                cls: 'primary',
                 listeners: {
-                    // ready: function() {
-                    //     me.updateView([]);
-                    // },
-                    change: function(){
-                        me.updateView([]);
-                    },
+                    click: me.updateView,
                     scope: me
                 }
-            },
-            {
-                xtype: 'rallyfieldpicker',
-                name: 'columnNames',
-                itemId: 'columnNames',
-                fieldLabel: 'Choose Fields',
-                width: 250,
-                margin: '10 10 10 10',    
-                autoExpand: false,
-                alwaysExpanded: false,
-                modelTypes: me.modelNames,
-                alwaysSelectedValues: me._getSelectedColumns(),
-                fieldBlackList: ['Attachments','Children'],
-                listeners:{
-                    select: function(){
-                        me.updateView([]);
-                    },
-                    scope:me
-                }
-            },
-            {
-                xtype: 'rallyinlinefiltercontrol',
-                name: 'inlineFilter',
-                itemId: 'inlineFilter',
-                margin: '10 10 10 10',                           
-                context: me.getContext(),
-                height:26,
-                inlineFilterButtonConfig: {
-                    stateful: true,
-                    stateId: me.getContext().getScopedStateId('inline-filter'),
-                    context: me.getContext(),
-                    modelNames: ['PortfolioItem/Feature'],
-                    filterChildren: false,
-                    inlineFilterPanelConfig: {
-                        quickFilterPanelConfig: {
-                            defaultFields: ['ArtifactSearch', 'Owner']
-                        }
-                    },
-                    listeners: {
-                        inlinefilterchange: me._onFilterChange,
-                        inlinefilterready: me._onFilterReady,
-                        scope: me
-                    } 
-                }
             }
-            // ,
-            // {
-            //     xtype:'rallybutton',
-            //     itemId:'export_button',
-            //     text: 'Download CSV',
-            //     margin:10,
-
-            //     disabled: false,
-            //     iconAlign: 'right',
-            //     listeners: {
-            //         scope: this,
-            //         click: function() {
-            //             me._export();
-            //         }
-            //     },
-            //     margin: '10',
-            //     scope: me
-            // }
         ]);
 
-    },
-
-    _onFilterChange: function(inlineFilterButton){
-        var me = this;
-        var filters = inlineFilterButton.getTypesAndFilters().filters;
-        me.updateView(filters);
-    },
-
-    _onFilterReady: function(inlineFilterPanel) {
-        var me = this;
-        me.down('#filter_box').add(inlineFilterPanel);
     },
 
 
@@ -1076,8 +296,7 @@ Ext.define("TSApp", {
         var me = this;
         var config = {
                         model : selectedPI,
-                        fetch : ['ObjectID'],
-                        //filters : Rally.data.wsapi.Filter.or(story_filters),
+                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal','LeafStoryPlanEstimateTotal'],
                         limit:'Infinity'
                     }
         return me._loadWsapiRecords(config);
@@ -1095,53 +314,31 @@ Ext.define("TSApp", {
         return me._loadWsapiRecords(config);
     },    
 
-    _getPortfolioItemTimeEntries: function(startindex, pagesize){
-        var deferred = Ext.create('Deft.Deferred');
 
-        if (!startindex){
-            startindex = 1;
-        }
-        if (!pagesize){
-            pagesize = 2000;
-        }
-
-        Ext.Ajax.request({
-            url: Ext.String.format("/slm/webservice/v2.0/PortfolioItemTimeEntry?fetch=true&start={1}&pagesize={0}", pagesize, startindex),
-            success: function(response){
-                if (response && response.responseText){
-                    var obj = Ext.JSON.decode(response.responseText);
-                    deferred.resolve(obj);
-                } else {
-                    deferred.resolve(null);
-                }
-            }
-        });
-
-        return deferred.promise;
-    },    
-
-    updateView: function(filters){
+    updateView: function(){
         var me = this;
 
         if(!me.down('#selectorType')) return;
 
-        console.log('update view filters',filters);
-        me.selectedPILevel = [me.down('#selectorType').getValue()];
-
+        me.selectedPILevel = [me.down('#selectorType').value];
         var pi_object_ids = [];
 
         me.totalTaskEstimate = 0;
-        me.totalTaskTimeSpent = 0;        
+        me.totalTaskTimeSpent = 0;
+        me.totalLeafStoryPlanEstimateTotal = 0;
+        me.totalAcceptedLeafStoryPlanEstimateTotal = 0;    
 
         me._getSelectedPIs(me.selectedPILevel[0]).then({
             success: function(records){
                 Ext.Array.each(records,function(pi){
                     pi_object_ids.push(pi.get('ObjectID'));
+                    me.totalLeafStoryPlanEstimateTotal += pi.get('LeafStoryPlanEstimateTotal') || 0;
+                    me.totalAcceptedLeafStoryPlanEstimateTotal += pi.get('AcceptedLeafStoryPlanEstimateTotal') || 0;
                 });
 
                 me._getTasksFromSnapShotStore(pi_object_ids).then({
                     success: function(results){
-                        console.log('all taks from snapshot store',results);
+                        // console.log('all taks from snapshot store',results);
                         me.totalTaskEstimate = 0;
                         me.lb_task_results = results[1];
                         Ext.Array.each(results[1],function(task){
@@ -1163,9 +360,8 @@ Ext.define("TSApp", {
                                 });
                                 Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
                                     models: me.selectedPILevel,
-                                    autoLoad: true,
-                                    enableHierarchy: true,
-                                    filters: filters
+                                    //autoLoad: true,
+                                    enableHierarchy: true
                                 }).then({
                                     success: me._addGrid,
                                     scope: me
@@ -1187,21 +383,18 @@ Ext.define("TSApp", {
 
     _updateAssociatedData: function(store, node, records, success){
         var me = this;
-        //me.setLoading("Loading..");
-        //this.logger.log('_updateAssociatedData', store, node, records, success);
-
         Ext.Array.each(records,function(r){
             var totalEstimate = 0;
             var totalTimeSpent = 0;
 
             Ext.Array.each(me.lb_task_results,function(lbTask){
                 if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
-                    totalEstimate += lbTask.get('Estimate') || 0;
+                    totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
                     totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
                 }
             });
-            r.set('Estimate',totalEstimate);
-            r.set('TimeSpent',totalTimeSpent);
+            r.set('Estimate',Ext.Number.toFixed(totalEstimate,2));
+            r.set('TimeSpent',Ext.Number.toFixed(totalTimeSpent,2));
         });
 
     },
@@ -1280,58 +473,112 @@ Ext.define("TSApp", {
         return deferred.promise;
     },
 
-    _addGrid: function (store) {
+    _addTotals:function() {
         var me = this;
-        //console.log('Tree store',store);
-        store.on('load', me._updateAssociatedData, me);
-        //console.log('columns ',me.getValue());
-        me.down('#display_box').removeAll();
-        me.down('#display_box').add({
-            xtype: 'rallytreegrid',
-            // stateful:true,
-            // stateId:me.getContext().getScopedStateId('pi_task_rollup_grid'),
-            context: this.getContext(),
-            store: store,
-            enableEditing: false,
-            enableSummaryRow:true,
-            scroll:'none',
-            autoScroll:false,
-            columnCfgs: me._getAllColumns(),
-            height:this.getHeight()
+        
+        me.down('#totals_box').removeAll();
+
+        Ext.create('Ext.data.Store', {
+            storeId:'totalStore',
+            fields:['TotalTaskEstimate', 'TotalTimeSpent', 'LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal'],
+            data:{'items':[
+                { 'TotalTaskEstimate': Ext.Number.toFixed(me.totalTaskEstimate,2) +' Hours',  'TotalTimeSpent':Ext.Number.toFixed(me.totalTaskTimeSpent,2) +' Hours','LeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalLeafStoryPlanEstimateTotal,0),'AcceptedLeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalAcceptedLeafStoryPlanEstimateTotal,0) },
+            ]},
+            proxy: {
+                type: 'memory',
+                reader: {
+                    type: 'json',
+                    root: 'items'
+                }
+            }
         });
+
+        me.down('#totals_box').add({
+            xtype: 'grid',
+            title: 'Totals',
+            header:{
+                style: {
+                    background: 'grey',
+                    'color': 'white',
+                    'font-weight': 'bold'
+                }
+            },
+            store: Ext.data.StoreManager.lookup('totalStore'),
+            columns: [
+                { text: 'Total Task Estimate',  dataIndex: 'TotalTaskEstimate', flex:2},
+                { text: 'Total Time Spent', dataIndex: 'TotalTimeSpent', flex:2 },
+                { text: 'Leaf Story PlanEstimate Total', dataIndex: 'LeafStoryPlanEstimateTotal' , flex:2},
+                { text: 'Accepted Leaf Story PlanEstimate Total', dataIndex: 'AcceptedLeafStoryPlanEstimateTotal' , flex:2}
+            ],
+            width:600
+        });
+    },
+
+    _addGrid: function (store) {
+        // console.log('store before',store);
+        var me = this;
+        var context = me.getContext();
+        store.on('load', me._updateAssociatedData, me);
+        // console.log('store after',store);
+        
+        me.down('#display_box').removeAll();
+        me._addTotals();
+
+        me.down('#display_box').add({
+                  itemId: 'pigridboard',
+                  xtype: 'rallygridboard',
+                  context: context,
+                  modelNames: me.selectedPILevel,
+                  toggleState: 'grid',
+                  stateful: false,
+                  plugins: me._getPlugins(),
+                  //store: store,
+                  gridConfig: {
+                    store: store,
+                    enableEditing: false,
+                    columnCfgs: me._getColumnCfgs()
+                  },
+                  height: me.getHeight()
+              });
+
         me.setLoading(false);
     },
 
-    getValue: function() {
-        var value = {};
-        Ext.Array.each(Ext.ComponentQuery.query('rallyfieldpicker',this), function(picker) {
-            var fields = picker.getValue(); 
-            
-            value[picker._key] = Ext.Array.map(fields, function(field){
-                return field.get('name');
-            });
-        });
-        
-        return Ext.JSON.encode(value);
-    },
 
-    _getAllColumns: function(){
+    _getPlugins: function(){
         var me = this;
-        var allColumns = me._getColumnCfgs();
-        var selectedValues = me.down('#columnNames') && me.down('#columnNames').selectedValues.keys;
-        var alwaysSelectedValues = me._getSelectedColumns();
-        Ext.Array.each(selectedValues,function(val){
-            if(!Ext.Array.contains(alwaysSelectedValues,val)){
-                allColumns.push({dataIndex:val,text:val});
-            }
+        models = me.selectedPILevel;
+
+        var plugins = [
+        {
+                ptype: 'rallygridboardinlinefiltercontrol',
+                inlineFilterButtonConfig: {
+                    stateful: true,
+                    stateId: me.getContext().getScopedStateId('filters'),
+                    modelNames: models,
+                    inlineFilterPanelConfig: {
+                        collapsed: false,
+                        quickFilterPanelConfig: {
+                            defaultFields: ['ArtifactSearch', 'Owner']
+                        }
+                    }
+                }
+        }
+        ];
+
+        plugins.push({
+            ptype: 'rallygridboardfieldpicker',
+            headerPosition: 'left',
+            modelNames: models,
+            stateful: true,
+            stateId: me.getContext().getScopedStateId('field-picker')
         });
-        return allColumns;
+
+        return plugins;        
     },
 
     _getColumnCfgs: function(){
         var me = this;
-        // console.log('selectedValues>>',me.down('#columnNames') && me.down('#columnNames').selectedValues.keys);
-        // console.log('Allowed Values>>',me.down('#columnNames') && me.down('#columnNames').alwaysSelectedValues);
 
         return  [{
             dataIndex: 'Name',
@@ -1347,34 +594,15 @@ Ext.define("TSApp", {
         },
         {
             dataIndex: 'Estimate',
-            text: 'Task Estimate',
-            summaryType: 'sum',
-            renderer: function(Estimate){
-                return Ext.Number.toFixed(Estimate || 0,2);
-            },
-            summaryRenderer: function() {
-                return '<span class="rollup">'+ Ext.Number.toFixed(me.totalTaskEstimate,2) +' Hours</span>';
-            }
+            text: 'Task Estimate'
         },
         {
             dataIndex: 'TimeSpent',
-            text: 'Task Time Spent',
-            summaryType: 'sum',
-            renderer: function(TimeSpent){
-                return Ext.Number.toFixed(TimeSpent || 0,2);
-            },            
-            summaryRenderer: function() {
-                return '<span class="rollup">'+ Ext.Number.toFixed(me.totalTaskTimeSpent,2) +' Hours</span>';
-            }
+            text: 'Task Time Spent'
         },
         {
             dataIndex: 'LeafStoryPlanEstimateTotal',
-            text: 'LeafStory Plan Estimate Total',
-            summaryType: 'sum'
-            //,
-            // summaryRenderer: function() {
-            //     return '<b>' + me.totalLeafStoryPlanEstimateTotal +'</b>';
-            // }
+            text: 'LeafStory Plan Estimate Total'
         },
         {
             dataIndex: 'PlanEstimate',
@@ -1382,12 +610,7 @@ Ext.define("TSApp", {
         },
         {
             dataIndex: 'AcceptedLeafStoryPlanEstimateTotal',
-            text: 'Accepted LeafStory Plan Estimate Total',
-            summaryType: 'sum'
-            ,
-            summaryRenderer: function(AcceptedLeafStoryPlanEstimateTotal) {
-                return '<span class="rollup">'+ Ext.Number.toFixed(AcceptedLeafStoryPlanEstimateTotal,2) +' Points </span>';;
-            }
+            text: 'Accepted LeafStory Plan Estimate Total'
         }];
     },
 
