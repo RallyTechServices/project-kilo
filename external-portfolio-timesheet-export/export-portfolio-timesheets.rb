@@ -130,8 +130,10 @@ def get_time_values
     # #if a week contains a new month, the export is done twice. This conidition makes sure the 2nd export done at the end of the weeks starts from the begining of the month.
     first_day_of_month = Date.new(Date.today.year,Date.today.month,1)
     first_day_of_month.strftime("%F")
+    #If the first day of the month is a Saturday or Sunday, export the whole week. 
+    day_fdom = first_day_of_month.strftime("%A").downcase
 
-    if(start_date < first_day_of_month && end_date >= first_day_of_month)
+    if(start_date < first_day_of_month && day_fdom != 'sunday' && day_fdom != 'saturday' && end_date >= first_day_of_month)
         start_date = first_day_of_month
     end
   else
@@ -144,7 +146,8 @@ def get_time_values
     end
   end
 
-
+  puts "start date  #{start_date}"
+  puts "end date  #{end_date}"
 
   #adjusting the dates and the query string to include start and end date.
   start_date = start_date - 1
@@ -153,8 +156,7 @@ def get_time_values
   start_date = start_date.to_s + "T00:00:00.000Z"
   end_date = end_date.to_s + "T00:00:00.000Z"
 
-  #puts "start date  #{start_date}"
-  #puts "end date  #{end_date}"
+
 
   query = RallyAPI::RallyQuery.new
   query.type = "TimeEntryValue"
@@ -747,17 +749,9 @@ def load_keys_from_csv
 
   file = @options.keys_file #"SAP-Keys.csv"
 
-  # @project = []
-  # @network = []
-  # @operation = []
-  # @sub_operation = []
   @sap_keys_all = []
   @sap_keys_no_so = []
   CSV.foreach(file, :col_sep => ";", :return_headers => false, :encoding => 'ISO-8859-1', :quote_char => "\x00") do |row|
-    # @project << row[0]
-    # @network << row[4]
-    # @operation << row[6]
-    # @sub_operation << row[8]
     @sap_keys_all << (row[0].nil? ? "" : row[0].downcase) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6]) + (row[8].nil? ? "" : row[8])
     @sap_keys_no_so << (row[0].nil? ? "" : row[0].downcase) + (row[4].nil? ? "" : row[4]) + (row[6].nil? ? "" : row[6])
   end
@@ -772,26 +766,26 @@ check_usage()
 
 load_keys_from_csv()
 
-puts "Time after parsing CSV file: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after parsing CSV file: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 connect_to_rally()
 pi_types = get_pi_types()
 
 puts "Fetching Time Values"
 time_values = get_time_values()
-puts "Time after get_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after get_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 rows = add_time_entry_to_time_values(time_values)
-puts "Time after add_time_entry_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after add_time_entry_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 rows = add_users_to_time_values(rows)
-puts "Time after add_users_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after add_users_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 rows = add_artifact_to_time_values(rows)
-puts "Time after add_artifact_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after add_artifact_to_time_values: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 rows = convert_to_output_array(rows,pi_types)
-puts "Time after convert_to_output_array: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
+#puts "Time after convert_to_output_array: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 
 if(@options.export_mode == "pv")
   #send email of missing and incorrect sap keys
@@ -808,4 +802,5 @@ else
   sap_trailer_xml(rows)
 end
 
+puts "End time: #{Time.new.strftime("%Y-%m-%d %H:%M:%S")}"
 puts "Done!"
