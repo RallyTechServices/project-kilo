@@ -15,6 +15,8 @@ Ext.override(Rally.data.wsapi.TreeStore,{
             if (m.typePath.indexOf("hierarchicalrequirement") != -1){
                 m.addField({name: 'Estimate', type: 'auto', defaultValue: null, modelType: m.typePath});
                 m.addField({name: 'TimeSpent', type: 'auto', defaultValue: null, modelType: m.typePath});
+                m.addField({name: 'AcceptedLeafStoryPlanEstimateTotal', type: 'auto', defaultValue: null, modelType: m.typePath});
+                m.addField({name: 'LeafStoryPlanEstimateTotal', type: 'auto', defaultValue: null, modelType: m.typePath});
             }            
         });
 

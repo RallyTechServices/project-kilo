@@ -2,14 +2,14 @@
 
 ## Summary/Description
 
-This app displays a tree grid of Portfolio Items. The Task Estimate, Task TimeSpent are rolled up to the top level PortfolioItem. It also displays the total of all the totals (Estimate and TimeSpent) for the current PI type and scope.
+This app displays a tree grid of Portfolio Items and User Story. The Task Estimate, Task TimeSpent are rolled up to the top level PortfolioItem. It also displays the total of all the totals (Estimate and TimeSpent) for the current PI type and scope (and filters).
 
 ![screenshot](images/app.png)
 
 ####Steps to install the Application
  1. On your dashboard, click on the gear to add an app.
  2. Choose "Custom HTML" from the App Catalog. Add the app.
- 3. Paste the code to HTML text area from the link - https://raw.githubusercontent.com/RallyTechServices/story-map-app/master/deploy/App.txt
+ 3. Paste the code to HTML text area from the link - https://raw.githubusercontent.com/RallyTechServices/project-kilo/master/portfolio-reporting/deploy/App.txt
  4. Click Save.
 
 
