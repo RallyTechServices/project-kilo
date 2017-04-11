@@ -8,15 +8,15 @@ Ext.override(Rally.data.wsapi.TreeStore,{
 
         Ext.Array.each(models, function(m){
             if (m.typePath.indexOf("portfolioitem/") != -1){
-                m.addField({name: 'PlanEstimate', type: 'auto', defaultValue: null, modelType: m.typePath});
-                m.addField({name: 'Estimate', type: 'auto', defaultValue: null, modelType: m.typePath});
-                m.addField({name: 'TimeSpent', type: 'auto', defaultValue: null, modelType: m.typePath});
+                //m.addField({name: 'PlanEstimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'Estimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'TimeSpent', type: 'auto', defaultValue: 0, modelType: m.typePath});
             }
             if (m.typePath.indexOf("hierarchicalrequirement") != -1){
-                m.addField({name: 'Estimate', type: 'auto', defaultValue: null, modelType: m.typePath});
-                m.addField({name: 'TimeSpent', type: 'auto', defaultValue: null, modelType: m.typePath});
-                m.addField({name: 'AcceptedLeafStoryPlanEstimateTotal', type: 'auto', defaultValue: null, modelType: m.typePath});
-                m.addField({name: 'LeafStoryPlanEstimateTotal', type: 'auto', defaultValue: null, modelType: m.typePath});
+                m.addField({name: 'Estimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'TimeSpent', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'AcceptedLeafStoryPlanEstimateTotal', type: 'auto', defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'LeafStoryPlanEstimateTotal', type: 'auto',defaultValue: 0, modelType: m.typePath});
             }            
         });
 
