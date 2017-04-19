@@ -5,7 +5,7 @@ Ext.define("TSApp", {
     defaults: { margin: 10 },
     items: [
         {xtype:'container',itemId:'top_box',layout:{type:'hbox'},items: [{xtype:'container',itemId:'message_box',layout:{type:'hbox'}},
-                {xtype:'container',itemId:'totals_box', layout:{type:'hbox',align: 'right'}}]},
+        {xtype:'container',itemId:'totals_box', layout:{type:'hbox',align: 'right'}}]},
         {xtype:'container',itemId:'display_box'}
     ],
 
@@ -70,7 +70,7 @@ Ext.define("TSApp", {
         var me = this;
         var config = {
                         model : selectedPI,
-                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal','LeafStoryPlanEstimateTotal'],
+                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal','LeafStoryPlanEstimateTotal','PlanEstimate','ScheduleState'],
                         limit:'Infinity'
                     }
         if(filters){
@@ -83,7 +83,7 @@ Ext.define("TSApp", {
         var me = this;
         var config = {
                         model : 'Task',
-                        fetch : ['ObjectID','TimeSpent','Estimate'],
+                        fetch : ['ObjectID','TimeSpent','Estimate','ToDo'],
                         filters : Rally.data.wsapi.Filter.or(filters),
                         limit:'Infinity',
                         enablePostGet:true
@@ -100,34 +100,20 @@ Ext.define("TSApp", {
         me.selectedPILevel = [me.down('#selectorType').value];
         var pi_object_ids = [];
 
-        // me.totalLeafStoryPlanEstimateTotal = 0;
-        // me.totalAcceptedLeafStoryPlanEstimateTotal = 0;  
-        // me.totalTaskEstimate = 0;
-        // me.totalTaskTimeSpent = 0;
-
         me.setLoading(true);
         me._getSelectedPIs(me.selectedPILevel[0]).then({
             success: function(records){
                 // console.log('_getSelectedPIs>>',records);
                 Ext.Array.each(records,function(r){
                     pi_object_ids.push(r.get('ObjectID'));
-
-                    // if(me.selectedPILevel[0]=='hierarchicalrequirement'){
-                    //     me.totalLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;
-                    //     if(me.selectedPILevel[0]=='hierarchicalrequirement' && r.get('ScheduleState') == 'Accepted'){
-                    //         me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;  
-                    //     }
-                    // }else{
-                    //     me.totalLeafStoryPlanEstimateTotal += r.get('LeafStoryPlanEstimateTotal') || 0;
-                    //     me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('AcceptedLeafStoryPlanEstimateTotal') || 0;                
-                    // }                    
                 });
 
 
                 me._getTasksFromSnapShotStore(pi_object_ids).then({
                     success: function(results){
                         // console.log('all taks from snapshot store',results);
-                        me.totalTaskEstimate = 0;
+                        // me.totalTaskEstimate = 0;
+                        // me.totalToDo = 0;
                         me.lb_task_results = results[1];
                         var task_filter = [];
                         Ext.Array.each(results[1], function(task){
@@ -137,12 +123,10 @@ Ext.define("TSApp", {
                         me._getTasks(task_filter).then({
                             success: function(records){
                                 // console.log('_getTasks>>',records);
-                                me.totalTaskTimeSpent = 0;
+                                // me.totalTaskTimeSpent = 0;
                                 me.taskTimeSpent = {}
                                 Ext.Array.each(records,function(task){
                                     me.taskTimeSpent[task.get('ObjectID')] = task.get('TimeSpent') || 0;
-                                    // me.totalTaskEstimate += task.get('Estimate') || 0;
-                                    // me.totalTaskTimeSpent += task.get('TimeSpent') || 0;                                    
                                 });
                                 Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
                                     models: me.selectedPILevel,
@@ -168,40 +152,27 @@ Ext.define("TSApp", {
 
     _updateAssociatedData: function(store, node, records, success){
         var me = this;
-        // console.log('_updateAssociatedData',records);
-        // me.totalLeafStoryPlanEstimateTotal = 0;
-        // me.totalAcceptedLeafStoryPlanEstimateTotal = 0;  
-        // me.totalTaskEstimate = 0;
-        // me.totalTaskTimeSpent = 0;
         me.suspendLayouts();
         Ext.Array.each(records,function(r){
 
             var totalEstimate = 0;
             var totalTimeSpent = 0;
-            // if(me.selectedPILevel[0]=='hierarchicalrequirement'){
-            //     me.totalLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;
-            //     if(me.selectedPILevel[0]=='hierarchicalrequirement' && r.get('ScheduleState') == 'Accepted'){
-            //         me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;  
-            //     }
-            // }else{
-            //     me.totalLeafStoryPlanEstimateTotal += r.get('LeafStoryPlanEstimateTotal') || 0;
-            //     me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('AcceptedLeafStoryPlanEstimateTotal') || 0;                
-            // }
-
+            var totalToDo = 0;
 
             Ext.Array.each(me.lb_task_results,function(lbTask){
                 if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
                     totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
+                    totalToDo +=  lbTask.get('ToDo') || 0;
                     totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
                 }
             });
 
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
+            r.set('ToDo', Ext.util.Format.round(totalToDo,2));
+            r.set('Diff', Ext.util.Format.round((totalTimeSpent - totalEstimate),2));
             r.set('ScheduleState',r.get('ScheduleState'));
 
-            // me.totalTaskEstimate += totalEstimate || 0;
-            // me.totalTaskTimeSpent += totalTimeSpent || 0;
         });
         me.resumeLayouts();
     },
@@ -218,7 +189,7 @@ Ext.define("TSApp", {
         find["__At"] = "current";
 
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
-            "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy"],
+            "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo"],
             "find": find,
             "useHttpPost": true
         });
@@ -292,9 +263,12 @@ Ext.define("TSApp", {
                     me.totalAcceptedLeafStoryPlanEstimateTotal = 0;  
                     me.totalTaskEstimate = 0;
                     me.totalTaskTimeSpent = 0;
+                    me.totalTaskToDo = 0;
+                    me.totalDiff = 0;
                     Ext.Array.each(records,function(r){
                         var totalEstimate = 0;
                         var totalTimeSpent = 0;
+                        var totalToDo = 0;
                         if(me.selectedPILevel[0]=='hierarchicalrequirement'){
                             me.totalLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;
                             if(me.selectedPILevel[0]=='hierarchicalrequirement' && r.get('ScheduleState') == 'Accepted'){
@@ -307,22 +281,28 @@ Ext.define("TSApp", {
 
                         Ext.Array.each(me.lb_task_results,function(lbTask){
                             if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
-                                totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
+                                totalEstimate += lbTask.get('Estimate') || 0; 
+                                totalToDo += lbTask.get('ToDo') || 0; 
                                 totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
                             }
                         });
 
                         me.totalTaskEstimate += totalEstimate || 0;
                         me.totalTaskTimeSpent += totalTimeSpent || 0;
+                        me.totalTaskToDo += totalToDo || 0;
+
                     });
+
+                    me.totalDiff = me.totalTaskEstimate - me.totalTaskTimeSpent;
+
 
                     me.down('#totals_box').removeAll();
 
                     Ext.create('Ext.data.Store', {
                         storeId:'totalStore',
-                        fields:['TotalTaskEstimate', 'TotalTimeSpent', 'LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal'],
+                        fields:['TotalTaskEstimate', 'TotalTimeSpent','TotalDiff','TotalTaskToDo', 'LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal'],
                         data:{'items':[
-                            { 'TotalTaskEstimate': Ext.Number.toFixed(me.totalTaskEstimate,2) +' Hours',  'TotalTimeSpent':Ext.Number.toFixed(me.totalTaskTimeSpent,2) +' Hours','LeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalLeafStoryPlanEstimateTotal,0),'AcceptedLeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalAcceptedLeafStoryPlanEstimateTotal,0) },
+                            { 'TotalTaskEstimate': Ext.Number.toFixed(me.totalTaskEstimate,2) +' Hours', 'TotalTimeSpent':Ext.Number.toFixed(me.totalTaskTimeSpent,2) +' Hours',  'TotalDiff': Ext.Number.toFixed(me.totalDiff,2) +' Hours', 'TotalTaskToDo': Ext.Number.toFixed(me.totalTaskToDo,2) +' Hours','LeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalLeafStoryPlanEstimateTotal,0),'AcceptedLeafStoryPlanEstimateTotal':Ext.Number.toFixed(me.totalAcceptedLeafStoryPlanEstimateTotal,0) },
                         ]},
                         proxy: {
                             type: 'memory',
@@ -345,10 +325,12 @@ Ext.define("TSApp", {
                         },
                         store: Ext.data.StoreManager.lookup('totalStore'),
                         columns: [
-                            { text: 'Total Task Estimate',  dataIndex: 'TotalTaskEstimate', flex:2},
-                            { text: 'Total Time Spent', dataIndex: 'TotalTimeSpent', flex:2 },
-                            { text: 'Leaf Story PlanEstimate Total', dataIndex: 'LeafStoryPlanEstimateTotal' , flex:2},
-                            { text: 'Accepted Leaf Story PlanEstimate Total', dataIndex: 'AcceptedLeafStoryPlanEstimateTotal' , flex:2}
+                            { text: 'Total Task Estimate',  dataIndex: 'TotalTaskEstimate', flex:4},
+                            { text: 'Total Time Spent', dataIndex: 'TotalTimeSpent', flex:4 },
+                            { text: 'Total (Estimate - TimeSpent)', dataIndex: 'TotalDiff', flex:5 },
+                            { text: 'Total ToDo', dataIndex: 'TotalTaskToDo', flex:2 },
+                            { text: 'Leaf Story PlanEstimate Total', dataIndex: 'LeafStoryPlanEstimateTotal' , flex:4},
+                            { text: 'Accepted Leaf Story PlanEstimate Total', dataIndex: 'AcceptedLeafStoryPlanEstimateTotal' , flex:4}
                         ],
                         width:600
                     });
@@ -376,12 +358,14 @@ Ext.define("TSApp", {
                   toggleState: 'grid',
                   stateful: false,
                   plugins: me._getPlugins(),
-                  //store: store,
                   gridConfig: {
                     store: store,
                     enableEditing: false,
-                    sortableColumns:true,
-                    columnCfgs: me._getColumnCfgs()
+                    columnCfgs: me._getColumnCfgs(),
+                    derivedColumns: me.getDerivedColumns(),
+                    shouldShowRowActionsColumn:false,
+                    enableRanking: false,
+                    enableBulkEdit: false
                   },
                   listeners: {
                     load: me._addTotals,
@@ -392,7 +376,6 @@ Ext.define("TSApp", {
 
         me.setLoading(false);
     },
-
 
     _getPlugins: function(){
         var me = this;
@@ -421,7 +404,7 @@ Ext.define("TSApp", {
             headerPosition: 'left',
             modelNames: models,
             stateful: true,
-            gridAlwaysSelectedValues: ['Name','Owner','Estimate','TimeSpent','LeafStoryPlanEstimateTotal','PlanEstimate','AcceptedLeafStoryPlanEstimateTotal'],
+            gridAlwaysSelectedValues: ['Name','Owner','Estimate','TimeSpent','ToDo','LeafStoryPlanEstimateTotal','PlanEstimate','AcceptedLeafStoryPlanEstimateTotal'],
             stateId: me.getContext().getScopedStateId('field-picker')
         });
 
@@ -448,21 +431,30 @@ Ext.define("TSApp", {
             text: 'Task Estimate'
         },
         {
+            dataIndex: 'ToDo',
+            text: 'To Do'
+        },
+        // {
+        //     dataIndex: 'Diff',
+        //     text: 'Estimate - TimeSpent'
+        // },
+        {
             dataIndex: 'TimeSpent',
             text: 'Task Time Spent',
-            sortable: true,
-            doSort: function(direction){
-                var ds = this.up('rallygrid').getStore();
-                ds.sort({
-                    property: 'TimeSpent',
-                    direction: direction,
-                    sorterFn: function(v1, v2){
-                        var a = v1.get(f) && v1.get(f).value || 0,
-                            b = v2.get(f) && v2.get(f).value || 0;
-                        return a > b ? 1 : (a < b ? -1 : 0);
-                    }
-                });
-            }
+            sortable: true
+            // ,
+            // doSort: function(direction){
+            //     var ds = this.up('rallygrid').getStore();
+            //     ds.sort({
+            //         property: 'TimeSpent',
+            //         direction: direction,
+            //         sorterFn: function(v1, v2){
+            //             var a = v1.get(f) && v1.get(f).value || 0,
+            //                 b = v2.get(f) && v2.get(f).value || 0;
+            //             return a > b ? 1 : (a < b ? -1 : 0);
+            //         }
+            //     });
+            // }
         },
         {
             dataIndex: 'LeafStoryPlanEstimateTotal',
@@ -475,6 +467,14 @@ Ext.define("TSApp", {
         {
             dataIndex: 'AcceptedLeafStoryPlanEstimateTotal',
             text: 'Accepted LeafStory Plan Estimate Total'
+        }].concat(me.getDerivedColumns());
+    },
+
+    getDerivedColumns: function(){
+        return [{
+            tpl: '<div style="text-align:right;">{Diff}</div>',
+            text: 'TimeSpent - Estimate',
+            xtype: 'templatecolumn'
         }];
     },
 
@@ -518,16 +518,6 @@ Ext.define("TSApp", {
             }
         });
         return deferred.promise;
-    },
-
-    _getSelectedColumns: function(){
-        var me = this;
-        var cols = [];
-        Ext.Array.each(me._getColumnCfgs(),function(col){
-            cols.push(col.dataIndex);
-        });
-        // console.log('_getSelectedColumns>>', cols)
-        return cols;
     },
  
     getOptions: function() {
