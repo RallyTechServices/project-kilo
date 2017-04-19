@@ -2,7 +2,7 @@
 
 ## Summary/Description
 
-This app displays a tree grid of Portfolio Items and User Story. The Task Estimate, Task TimeSpent are rolled up to the top level PortfolioItem. It also displays the total of all the totals (Estimate and TimeSpent) for the current PI type and scope (and filters).
+This app displays a tree grid of Portfolio Items and User Story. The Task Estimate, Task TimeSpent, ToDo and the difference between TimeSpent and Estimate are rolled up to the top level PortfolioItem. It also displays the total of all the totals (Estimate, TimeSpent, ToDo and the difference) for the current PI type and scope (and filters).
 
 ![screenshot](images/app.png)
 
