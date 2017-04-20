@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Apr 19 2017 17:29:46 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Apr 20 2017 09:16:24 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Apr 19 2017 17:29:46 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Apr 20 2017 09:16:24 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 16136145330;
+        var CHECKSUM = 16136145587;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -475,7 +475,7 @@ Ext.define("TSApp", {
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
             r.set('ToDo', Ext.util.Format.round(totalToDo,2));
-            r.set('Diff', Ext.util.Format.round((totalTimeSpent - totalEstimate),2));
+            r.set('Diff', Ext.util.Format.round((totalEstimate - totalTimeSpent),2));
             r.set('ScheduleState',r.get('ScheduleState'));
 
         });
