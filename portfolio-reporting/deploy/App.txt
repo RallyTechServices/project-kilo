@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 18 2017 07:04:55 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Apr 19 2017 17:29:46 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 18 2017 07:04:55 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Apr 19 2017 17:29:46 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 16581065299;
+        var CHECKSUM = 16136145330;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -279,12 +279,6 @@ Ext.override(Rally.ui.grid.TreeGrid, {
         mergedColumns = mergedColumns.concat(this.config.derivedColumns);
         return mergedColumns;
     },
-    // _getColumnConfigsBasedOnCurrentOrder: function(columnConfigs) {
-    //     return _(this.headerCt.items.getRange()).map(function(column) {
-    //         //override:  Added additional search for column.text
-    //         return _.contains(columnConfigs, column.dataIndex) ? column.dataIndex : _.find(columnConfigs, {dataIndex: column.dataIndex, text: column.text});
-    //     }).compact().value();
-    // },
     _restoreColumnOrder: function(columnConfigs) {
 
         var currentColumns = this._getColumnConfigsBasedOnCurrentOrder(columnConfigs);
@@ -638,7 +632,7 @@ Ext.define("TSApp", {
                         columns: [
                             { text: 'Total Task Estimate',  dataIndex: 'TotalTaskEstimate', flex:4},
                             { text: 'Total Time Spent', dataIndex: 'TotalTimeSpent', flex:4 },
-                            { text: 'Total (Estimate - TimeSpent)', dataIndex: 'TotalDiff', flex:5 },
+                            { text: 'Diff (Estimate - TimeSpent)', dataIndex: 'TotalDiff', flex:5 },
                             { text: 'Total ToDo', dataIndex: 'TotalTaskToDo', flex:2 },
                             { text: 'Leaf Story PlanEstimate Total', dataIndex: 'LeafStoryPlanEstimateTotal' , flex:4},
                             { text: 'Accepted Leaf Story PlanEstimate Total', dataIndex: 'AcceptedLeafStoryPlanEstimateTotal' , flex:4}
@@ -784,7 +778,7 @@ Ext.define("TSApp", {
     getDerivedColumns: function(){
         return [{
             tpl: '<div style="text-align:right;">{Diff}</div>',
-            text: 'TimeSpent - Estimate',
+            text: 'Diff (Estimate – Timespent)',
             xtype: 'templatecolumn'
         }];
     },
