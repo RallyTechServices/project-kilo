@@ -327,7 +327,7 @@ Ext.define("TSApp", {
                         columns: [
                             { text: 'Total Task Estimate',  dataIndex: 'TotalTaskEstimate', flex:4},
                             { text: 'Total Time Spent', dataIndex: 'TotalTimeSpent', flex:4 },
-                            { text: 'Total (Estimate - TimeSpent)', dataIndex: 'TotalDiff', flex:5 },
+                            { text: 'Diff (Estimate - TimeSpent)', dataIndex: 'TotalDiff', flex:5 },
                             { text: 'Total ToDo', dataIndex: 'TotalTaskToDo', flex:2 },
                             { text: 'Leaf Story PlanEstimate Total', dataIndex: 'LeafStoryPlanEstimateTotal' , flex:4},
                             { text: 'Accepted Leaf Story PlanEstimate Total', dataIndex: 'AcceptedLeafStoryPlanEstimateTotal' , flex:4}
@@ -473,7 +473,7 @@ Ext.define("TSApp", {
     getDerivedColumns: function(){
         return [{
             tpl: '<div style="text-align:right;">{Diff}</div>',
-            text: 'TimeSpent - Estimate',
+            text: 'Diff (Estimate – Timespent)',
             xtype: 'templatecolumn'
         }];
     },
