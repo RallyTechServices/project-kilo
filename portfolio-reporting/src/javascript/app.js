@@ -170,7 +170,7 @@ Ext.define("TSApp", {
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
             r.set('ToDo', Ext.util.Format.round(totalToDo,2));
-            r.set('Diff', Ext.util.Format.round((totalTimeSpent - totalEstimate),2));
+            r.set('Diff', Ext.util.Format.round((totalEstimate - totalTimeSpent),2));
             r.set('ScheduleState',r.get('ScheduleState'));
 
         });
