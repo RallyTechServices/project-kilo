@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Apr 20 2017 09:16:24 GMT-0700 (PDT) -->
+    <!--  Build Date: Fri May 05 2017 17:29:03 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Apr 20 2017 09:16:24 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Fri May 05 2017 17:29:03 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 16136145587;
+        var CHECKSUM = 15856429537;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -223,7 +223,7 @@ Ext.override(Rally.data.wsapi.TreeStore,{
         }
 
         Ext.Array.each(models, function(m){
-            m.addField({name: 'Diff', type: 'float',  defaultValue: 0});
+            m.addField({name: 'Diff', type: 'auto',  defaultValue: 0});
 
             if (m.typePath.indexOf("portfolioitem/") != -1){
                 //m.addField({name: 'PlanEstimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
@@ -463,21 +463,22 @@ Ext.define("TSApp", {
             var totalEstimate = 0;
             var totalTimeSpent = 0;
             var totalToDo = 0;
-
+            var totalDiff = 0;
             Ext.Array.each(me.lb_task_results,function(lbTask){
                 if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
                     totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
                     totalToDo +=  lbTask.get('ToDo') || 0;
-                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
+                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
                 }
             });
 
+            totalTimeSpent = isNaN(Ext.util.Format.round(totalTimeSpent,2)) ? 0 :  Ext.util.Format.round(totalTimeSpent,2);  
+            totalDiff = isNaN(Ext.util.Format.round((totalEstimate - totalTimeSpent),2)) ? 0 :  Ext.util.Format.round((totalEstimate - totalTimeSpent),2);  
+
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
-            r.set('ToDo', Ext.util.Format.round(totalToDo,2));
-            r.set('Diff', Ext.util.Format.round((totalEstimate - totalTimeSpent),2));
-            r.set('ScheduleState',r.get('ScheduleState'));
-
+            r.set('ToDo', totalTimeSpent);
+            r.set('Diff', totalDiff);
         });
         me.resumeLayouts();
     },
@@ -739,27 +740,9 @@ Ext.define("TSApp", {
             dataIndex: 'ToDo',
             text: 'To Do'
         },
-        // {
-        //     dataIndex: 'Diff',
-        //     text: 'Estimate - TimeSpent'
-        // },
         {
             dataIndex: 'TimeSpent',
-            text: 'Task Time Spent',
-            sortable: true
-            // ,
-            // doSort: function(direction){
-            //     var ds = this.up('rallygrid').getStore();
-            //     ds.sort({
-            //         property: 'TimeSpent',
-            //         direction: direction,
-            //         sorterFn: function(v1, v2){
-            //             var a = v1.get(f) && v1.get(f).value || 0,
-            //                 b = v2.get(f) && v2.get(f).value || 0;
-            //             return a > b ? 1 : (a < b ? -1 : 0);
-            //         }
-            //     });
-            // }
+            text: 'Task Time Spent'
         },
         {
             dataIndex: 'LeafStoryPlanEstimateTotal',

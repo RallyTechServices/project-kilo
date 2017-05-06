@@ -158,21 +158,22 @@ Ext.define("TSApp", {
             var totalEstimate = 0;
             var totalTimeSpent = 0;
             var totalToDo = 0;
-
+            var totalDiff = 0;
             Ext.Array.each(me.lb_task_results,function(lbTask){
                 if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
                     totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
                     totalToDo +=  lbTask.get('ToDo') || 0;
-                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
+                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
                 }
             });
 
+            totalTimeSpent = isNaN(Ext.util.Format.round(totalTimeSpent,2)) ? 0 :  Ext.util.Format.round(totalTimeSpent,2);  
+            totalDiff = isNaN(Ext.util.Format.round((totalEstimate - totalTimeSpent),2)) ? 0 :  Ext.util.Format.round((totalEstimate - totalTimeSpent),2);  
+
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
-            r.set('ToDo', Ext.util.Format.round(totalToDo,2));
-            r.set('Diff', Ext.util.Format.round((totalEstimate - totalTimeSpent),2));
-            r.set('ScheduleState',r.get('ScheduleState'));
-
+            r.set('ToDo', totalTimeSpent);
+            r.set('Diff', totalDiff);
         });
         me.resumeLayouts();
     },
@@ -434,27 +435,9 @@ Ext.define("TSApp", {
             dataIndex: 'ToDo',
             text: 'To Do'
         },
-        // {
-        //     dataIndex: 'Diff',
-        //     text: 'Estimate - TimeSpent'
-        // },
         {
             dataIndex: 'TimeSpent',
-            text: 'Task Time Spent',
-            sortable: true
-            // ,
-            // doSort: function(direction){
-            //     var ds = this.up('rallygrid').getStore();
-            //     ds.sort({
-            //         property: 'TimeSpent',
-            //         direction: direction,
-            //         sorterFn: function(v1, v2){
-            //             var a = v1.get(f) && v1.get(f).value || 0,
-            //                 b = v2.get(f) && v2.get(f).value || 0;
-            //             return a > b ? 1 : (a < b ? -1 : 0);
-            //         }
-            //     });
-            // }
+            text: 'Task Time Spent'
         },
         {
             dataIndex: 'LeafStoryPlanEstimateTotal',
