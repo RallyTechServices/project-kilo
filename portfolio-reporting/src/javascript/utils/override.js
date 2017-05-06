@@ -7,7 +7,7 @@ Ext.override(Rally.data.wsapi.TreeStore,{
         }
 
         Ext.Array.each(models, function(m){
-            m.addField({name: 'Diff', type: 'float',  defaultValue: 0});
+            m.addField({name: 'Diff', type: 'auto',  defaultValue: 0});
 
             if (m.typePath.indexOf("portfolioitem/") != -1){
                 //m.addField({name: 'PlanEstimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
