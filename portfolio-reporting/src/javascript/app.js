@@ -80,15 +80,35 @@ Ext.define("TSApp", {
     },
 
     _getTasks: function(filters){
+        var deferred = Ext.create('Deft.Deferred');
         var me = this;
-        var config = {
-                        model : 'Task',
-                        fetch : ['ObjectID','TimeSpent','Estimate','ToDo'],
-                        filters : Rally.data.wsapi.Filter.or(filters),
-                        limit:'Infinity',
-                        enablePostGet:true
-                    }
-        return me._loadWsapiRecords(config);
+
+        Ext.create('CArABU.technicalservices.chunk.Store',{
+            storeConfig: {
+                model: 'Task',
+                fetch: ['ObjectID','TimeSpent','Estimate','ToDo'],
+            },
+            chunkProperty: 'WorkProduct.ObjectID',
+            chunkValue: filters
+        }).load().then({
+            success: function(records){
+                deferred.resolve(records);
+            },
+            failure: me.showErrorNotification,
+            scope: me
+        });
+
+        return deferred.promise;
+
+        // var me = this;
+        // var config = {
+        //                 model : 'Task',
+        //                 fetch : ['ObjectID','TimeSpent','Estimate','ToDo'],
+        //                 filters : Rally.data.wsapi.Filter.or(filters),
+        //                 limit:'Infinity',
+        //                 enablePostGet:true
+        //             }
+        // return me._loadWsapiRecords(config);
     },    
 
 
@@ -117,12 +137,13 @@ Ext.define("TSApp", {
                         me.lb_task_results = results[1];
                         var task_filter = [];
                         Ext.Array.each(results[1], function(task){
-                            task_filter.push({property:'WorkProduct.ObjectID',value:task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]});
+                            // task_filter.push({property:'WorkProduct.ObjectID',value:task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]});
+                            task_filter.push(task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]);
                         });
 
                         me._getTasks(task_filter).then({
                             success: function(records){
-                                // console.log('_getTasks>>',records);
+                                console.log('_getTasks>>',records);
                                 // me.totalTaskTimeSpent = 0;
                                 me.taskTimeSpent = {}
                                 Ext.Array.each(records,function(task){
@@ -172,7 +193,7 @@ Ext.define("TSApp", {
 
             r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
             r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
-            r.set('ToDo', totalTimeSpent);
+            r.set('ToDo', totalToDo);
             r.set('Diff', totalDiff);
         });
         me.resumeLayouts();
@@ -192,7 +213,8 @@ Ext.define("TSApp", {
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo"],
             "find": find,
-            "useHttpPost": true
+            "useHttpPost": true,
+            "removeUnauthorizedSnapshots":true
         });
 
         snapshotStore.load({
@@ -211,6 +233,7 @@ Ext.define("TSApp", {
 
        
     _loadWsapiRecords: function(config){
+        console.log('_loadWsapiRecords',config);
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
         var default_config = {
