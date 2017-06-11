@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sat Jun 10 2017 17:22:35 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat Jun 10 2017 17:51:57 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Jun 10 2017 17:22:35 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Sat Jun 10 2017 17:51:57 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 20153463083;
+        var CHECKSUM = 20659639005;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -603,15 +603,27 @@ Ext.define("TSApp", {
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo"],
             "find": find,
-            "useHttpPost": true,
-            "removeUnauthorizedSnapshots":true
+            "useHttpPost": true
+            // ,
+            // "removeUnauthorizedSnapshots":true
         });
 
         snapshotStore.load({
             callback: function(records, operation) {
-                deferred.resolve([piObjectIDs,records]);
+                console.log('operation>>',operation);
+                if(operation.wasSuccessful()){
+                    deferred.resolve([piObjectIDs,records]);
+                }else{
+                    if(operation.error.status === 403) {
+                        me.showErrorNotification('You do not have required permissions to access the data.');
+                    }else{
+                        me.showErrorNotification('Problem Loading');
+                    }
+                    me.setLoading(false);
+                }
+                
             },
-            scope:this
+            scope:me
         });
     
         return deferred;
