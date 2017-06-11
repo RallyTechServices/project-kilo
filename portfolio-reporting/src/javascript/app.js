@@ -213,15 +213,27 @@ Ext.define("TSApp", {
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo"],
             "find": find,
-            "useHttpPost": true,
-            "removeUnauthorizedSnapshots":true
+            "useHttpPost": true
+            // ,
+            // "removeUnauthorizedSnapshots":true
         });
 
         snapshotStore.load({
             callback: function(records, operation) {
-                deferred.resolve([piObjectIDs,records]);
+                console.log('operation>>',operation);
+                if(operation.wasSuccessful()){
+                    deferred.resolve([piObjectIDs,records]);
+                }else{
+                    if(operation.error.status === 403) {
+                        me.showErrorNotification('You do not have required permissions to access the data.');
+                    }else{
+                        me.showErrorNotification('Problem Loading');
+                    }
+                    me.setLoading(false);
+                }
+                
             },
-            scope:this
+            scope:me
         });
     
         return deferred;
