@@ -427,11 +427,21 @@ Ext.define("TSApp", {
                     inlineFilterPanelConfig: {
                         collapsed: false,
                         quickFilterPanelConfig: {
-                            defaultFields: ['ArtifactSearch', 'Owner']
-                        }
-
-                    }
-                }
+                            defaultFields: ['ArtifactSearch', 'Owner'],
+                            addQuickFilterConfig: {
+                                whiteListFields: ['Milestones', 'Tags']
+                            }
+                        },
+                        advancedFilterPanelConfig: {
+                            advancedFilterRowsConfig: {
+                                propertyFieldConfig: {
+                                    whiteListFields: ['Milestones', 'Tags']
+                                }
+                            }
+                        }  
+                    }                  
+                },
+                
         }
         ];
 
