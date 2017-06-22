@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Reporting App</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sat Jun 10 2017 17:51:57 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 22 2017 13:48:15 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Jun 10 2017 17:51:57 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Jun 22 2017 13:48:15 GMT-0700 (PDT)";
         var STORY    = "F182";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 20659639005;
+        var CHECKSUM = 21017703970;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -817,11 +817,21 @@ Ext.define("TSApp", {
                     inlineFilterPanelConfig: {
                         collapsed: false,
                         quickFilterPanelConfig: {
-                            defaultFields: ['ArtifactSearch', 'Owner']
-                        }
-
-                    }
-                }
+                            defaultFields: ['ArtifactSearch', 'Owner'],
+                            addQuickFilterConfig: {
+                                whiteListFields: ['Milestones', 'Tags']
+                            }
+                        },
+                        advancedFilterPanelConfig: {
+                            advancedFilterRowsConfig: {
+                                propertyFieldConfig: {
+                                    whiteListFields: ['Milestones', 'Tags']
+                                }
+                            }
+                        }  
+                    }                  
+                },
+                
         }
         ];
 
