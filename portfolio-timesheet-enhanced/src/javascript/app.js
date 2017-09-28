@@ -397,23 +397,24 @@ Ext.define('PTApp', {
 
         var store = Ext.create('Ext.data.JsonStore', {
             fields: fields,
-            data: data
+            data: data,
+            statefulFilters:true
         });
 
         app.grid = new Ext.grid.GridPanel({
             header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
+            store: store,            
             stateful: true,
-            stateId: 'tsGrid1',
+            stateId: 'tsGrid11',
             features: [{
-                ftype: 'grouping',
+                ftype: 'groupingsummary',
                 showSummaryRow: true,
                 groupHeaderTpl: ' {name}'
             }, {
                 ftype: 'summary'
             }],
-            store: store,
             height:this.getHeight(),
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
@@ -490,7 +491,7 @@ Ext.define('PTApp', {
             return fid === hObj.get("FormattedID");
         });
         if (!_.isUndefined(obj) && !_.isNull(obj)) {
-            return '<a href=' + Rally.nav.Manager.getDetailUrl(obj) + '>' + textValue + '</a>';
+            return '<a href=' + Rally.nav.Manager.getDetailUrl(obj) + ' target="_blank">' + textValue + '</a>';
         }
         return textValue;
     },
