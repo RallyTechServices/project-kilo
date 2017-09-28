@@ -7,31 +7,34 @@ Ext.define("GridExporter", {
         XmlFileExtension: '.xml'
     },
 
-    _downloadFiles: function(files) {
-        if (files.length) {
-            var data = files.pop();
-            var format = files.pop();
-            var file = files.pop();
+    // _downloadFiles: function(files) {
 
-            var href = "<a href='" + format + "," + encodeURIComponent(data) + "' download='" + file + "'></a>";
+    //     Ext.Array.each(files)
 
-            var ml = Ext.DomHelper.insertAfter(window.document.getElementById('tsGrid'), href);
-            ml.click();
-            //            ml.remove(); //Leaves them behind without this, but there is a timing issue: from click to remove.
-            this._downloadFiles(files);
-        }
-    },
+    //     if (files.length) {
+    //         var data = files.pop();
+    //         var format = files.pop();
+    //         var file = files.pop();
+
+    //         var href = "<a href='" + format + "," + encodeURIComponent(data) + "' download='" + file + "'></a>";
+
+    //         var ml = Ext.DomHelper.insertAfter(window.document.getElementById('tsGrid'), href);
+    //         ml.click();
+    //         //            ml.remove(); //Leaves them behind without this, but there is a timing issue: from click to remove.
+    //         this._downloadFiles(files);
+    //     }
+    // },
 
     exportCSV: function(grid) {
         var data = this._getCSV(grid, false);
         // fix: ' character was causing termination of csv file
         data = data.replace(/\'/g, "");
-        this._downloadFiles(
-            [
-                'export.csv', 'data:text/csv;charset=utf8', data
-            ]
-        );
-
+        // this._downloadFiles(
+        //     [
+        //         'export.csv', 'data:text/csv;charset=utf8', data
+        //     ]
+        // );
+        Rally.technicalservices.FileUtilities.saveCSVToFile(data,'export.csv');
     },
 
     _XMLIndent: function(index, tag, leaf, data) {
@@ -72,7 +75,7 @@ Ext.define("GridExporter", {
 
         text += "</" + file + ">\n";
         file += this.self.XmlFileExtension;
-        return [file, format, text];
+        return Rally.technicalservices.FileUtilities.saveXMLToFile(text,file); //[file, format, text];
     },
 
     _addSAPHeaderFile: function(data) {
@@ -94,7 +97,7 @@ Ext.define("GridExporter", {
 
         text += "</" + file + ">\n";
         file += this.self.XmlFileExtension;
-        return [file, format, text];
+        return Rally.technicalservices.FileUtilities.saveXMLToFile(text,file); //[file, format, text];
     },
 
     _addSAPDataFile: function(data,xmlConfig) {
@@ -124,7 +127,7 @@ Ext.define("GridExporter", {
         }, this);
         text += "</" + file + ">\n";
         file += this.self.XmlFileExtension;
-        return [file, format, text];
+        return Rally.technicalservices.FileUtilities.saveXMLToFile(text,file); //[file, format, text];
 
     },
 
@@ -133,7 +136,7 @@ Ext.define("GridExporter", {
         var format = 'data:text/csv;charset=utf8';
 
         var text = this._getCSV(grid, true);
-        if (text) return [file, format, text];
+        if (text) return Rally.technicalservices.FileUtilities.saveCSVToFile(text,file);
         else return null;
     },
 
@@ -146,14 +149,14 @@ Ext.define("GridExporter", {
             var errors = this._addSAPErrorsFile(grid);
 
             //            if (errors) {
-            this._downloadFiles(errors);
+            //this._downloadFiles(errors);
             //            }
             //            else {
-            this._downloadFiles(filesToSave.concat(
+            //this._downloadFiles(filesToSave.concat(
                 this._addSAPHeaderFile(data),
                 this._addSAPDataFile(data,xmlConfig),
                 this._addSAPTrailerFile(data)
-            ));
+            //));
             //            }
         }
 
