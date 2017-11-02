@@ -18,6 +18,8 @@ require "date"
 # PREREQUISITES:
 #       - Ruby version 1.9.3 or later.
 #
+# sample command for testing external-portfolio-timesheet-export rajan08$ ruby export-portfolio-timesheets.rb -f auth.rb -k SAP-Keys.csv -s 20160601 -e 20171001 -m email -t email-template.txt
+#
 # ------------------------------------------------------------------------------
 
 @parents_hash = {}
@@ -529,26 +531,26 @@ end
 
 
 #create a map of csv_array for each owner email address
-def get_split_csv(rows,error)
-  columns = get_columns()
-  csv_array = {} 
-  rows.each do |row|
-    if !error || !is_valid(row)
-      if csv_array[row["ProjectOwnerEmail"]].nil?
-        csv_array[row["ProjectOwnerEmail"]] = [get_header(columns,error)]
-      end
-      row_csv_array = []
-      columns.each do |column|
-        field = column['dataIndex']
-        if field != "ProjectOwnerEmail"
-          row_csv_array.push(escape_text_for_csv(row[field]))
-        end
-      end
-      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
-    end
-  end
-  return csv_array
-end
+# def get_split_csv(rows,error)
+#   columns = get_columns()
+#   csv_array = {} 
+#   rows.each do |row|
+#     if !error || !is_valid(row)
+#       if csv_array[row["ProjectOwnerEmail"]].nil?
+#         csv_array[row["ProjectOwnerEmail"]] = [get_header(columns,error)]
+#       end
+#       row_csv_array = []
+#       columns.each do |column|
+#         field = column['dataIndex']
+#         if field != "ProjectOwnerEmail"
+#           row_csv_array.push(escape_text_for_csv(row[field]))
+#         end
+#       end
+#       csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
+#     end
+#   end
+#   return csv_array
+# end
 
 def get_split_csv_from_keys(rows,error)
   columns = get_columns()
@@ -599,7 +601,6 @@ def errors_csv(rows)
     end
   end
 
-
   if (@options.export_mode == "email" || @options.export_mode == "pv")
     send_email(filename, rows,$to_address, @time_now)
   end
@@ -615,7 +616,8 @@ def sap_headers_xml(rows)
   builder = Nokogiri::XML::Builder.new do |xml|
     xml.E1CATS_INSERT {
       rows.each do |row|
-        if is_valid(row)
+        #if is_valid(row)
+        if (is_valid_by_keys(row) == "valid")
           xml.Datarow {
             xml.GUID row['ObjectID']
             xml.PROFILE row['c_KMDEmployeeID']
@@ -639,7 +641,8 @@ def sap_data_xml(rows)
   builder = Nokogiri::XML::Builder.new do |xml|
     xml.E1CATS_INSERT {
       rows.each do |row|
-        if is_valid(row)
+        #if is_valid(row)
+        if (is_valid_by_keys(row) == "valid")
           xml.Datarow {
             xml.GUID row['ObjectID']
             xml.WORKDATE row['Date']
@@ -671,7 +674,8 @@ def sap_trailer_xml(rows)
   builder = Nokogiri::XML::Builder.new do |xml|
     xml.E1CATS_INSERT {
       rows.each do |row|
-        if is_valid(row)
+        #if is_valid(row)
+        if (is_valid_by_keys(row) == "valid")
           xml.Datarow {
             xml.GUID row['ObjectID']
             xml.ROW "1"
@@ -686,13 +690,13 @@ def sap_trailer_xml(rows)
   File.write(filename, builder.to_xml)
 end
 
-def is_valid(row)
-  if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
-    return true
-  else
-    return false
-  end
-end
+# def is_valid(row)
+#   if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
+#     return true
+#   else
+#     return false
+#   end
+# end
 
 def date_of_prev(day)
   date  = Date.parse(day)
