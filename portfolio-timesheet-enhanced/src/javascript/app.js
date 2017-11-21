@@ -415,7 +415,6 @@ Ext.define('PTApp', {
             }, {
                 ftype: 'summary'
             }],
-            height:this.getHeight(),
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {
@@ -464,12 +463,15 @@ Ext.define('PTApp', {
                         dataIndex: f.name,
                         flex:1
                     };
-            })
+            }),
+            listeners:{
+                boxready: function( grid, width, height, eOpts ){
+                    console.log( 'boxready>>>>',grid, width, height, eOpts );
+                }
+            }
         });
 
         this.add(app.grid);
-
-
     },
 
     getSubOperationValue: function(r){
