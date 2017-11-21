@@ -191,6 +191,10 @@ Ext.override(Ext.grid.feature.Grouping, {
 
 Ext.override(Ext.grid.GridPanel, {
     applyState: function(state) {
-        this.store.group(state.storeState.groupers);
+        var me = this;
+        me.callParent(arguments);
+        if(state && state.storeState && state.storeState.groupers){
+            this.store.group(state.storeState.groupers);
+        }
     }
 });
