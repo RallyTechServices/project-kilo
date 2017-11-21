@@ -463,12 +463,7 @@ Ext.define('PTApp', {
                         dataIndex: f.name,
                         flex:1
                     };
-            }),
-            listeners:{
-                boxready: function( grid, width, height, eOpts ){
-                    console.log( 'boxready>>>>',grid, width, height, eOpts );
-                }
-            }
+            })
         });
 
         this.add(app.grid);

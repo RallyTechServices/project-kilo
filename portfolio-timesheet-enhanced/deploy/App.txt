@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 21 2017 11:06:27 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Nov 21 2017 11:36:16 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 21 2017 11:06:27 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Tue Nov 21 2017 11:36:16 GMT-0800 (PST)";
         var STORY    = "US8846";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 230170991055;
+        var CHECKSUM = 230046196990;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -644,7 +644,11 @@ Ext.override(Ext.grid.feature.Grouping, {
 
 Ext.override(Ext.grid.GridPanel, {
     applyState: function(state) {
-        this.store.group(state.storeState.groupers);
+        var me = this;
+        me.callParent(arguments);
+        if(state && state.storeState && state.storeState.groupers){
+            this.store.group(state.storeState.groupers);
+        }
     }
 });
 Ext.define('Rally.technicalservices.FileUtilities', {
@@ -2739,12 +2743,7 @@ Ext.define('PTApp', {
                         dataIndex: f.name,
                         flex:1
                     };
-            }),
-            listeners:{
-                boxready: function( grid, width, height, eOpts ){
-                    console.log( 'boxready>>>>',grid, width, height, eOpts );
-                }
-            }
+            })
         });
 
         this.add(app.grid);
