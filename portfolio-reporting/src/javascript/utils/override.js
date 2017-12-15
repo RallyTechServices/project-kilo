@@ -87,3 +87,38 @@ Ext.override(Rally.ui.grid.TreeGrid, {
         }
     }
 });
+
+/* Opening all links in new window as per customer request. */
+Ext.override(Rally.nav.DetailLink, {
+
+        getLink: function(options) {
+            var data = options.record.isModel ? options.record.data : options.record;
+            var target =  Rally.util.Window.isInFrame() ? '_top' : '';
+            var hover = '';
+
+            var href = Rally.nav.Manager.getDetailUrl(data, options);
+
+            if(!href){
+                return options.text;
+            }
+
+            var showHover = options.showHover !== false && window.activateEl;
+            if(showHover){
+                hover = this._getHoverText(data._ref);
+            }
+
+            var oid = Rally.util.Ref.getOidFromRef(data._ref);
+
+            return this.template.apply({
+                href: href,
+                target: '_blank',
+                onclick: options.onclick,
+                text: options.text,
+                hover: hover,
+                tooltip: options.showTooltip !== false,
+                id: showHover? 'hov' + oid : ''
+            });
+
+        }
+
+});
