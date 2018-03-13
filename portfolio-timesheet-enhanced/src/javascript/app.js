@@ -77,12 +77,12 @@ Ext.define('PTApp', {
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((24 * 60 * 60 * 1000) - 1)));
                             break;
                         case 'This Week':
-                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, dt.getDay())); //Sunday AM
-                            end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
+                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, (dt.getDay()-1))); //Monday AM - WAS:Sunday AM
+                            end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((6 * 24 * 60 * 60 * 1000)))); //Sunday PM WAS:Saturday PM
                             break;
                         case 'Last Week':
-                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, 7 + dt.getDay())); //Sunday AM
-                            end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
+                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, 7 + (dt.getDay()-1))); //Monday AM - WAS:Sunday AM
+                            end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((6 * 24 * 60 * 60 * 1000)))); //Sunday PM WAS:Saturday PM
                             break;
                         case 'This Month':
                             start = new Date((dt.getMonth() + 1) + "/1/" + dt.getFullYear());//new Date("1/" + dt.getMonth() + 1 + "/" + dt.getFullYear());
@@ -138,7 +138,7 @@ Ext.define('PTApp', {
                     app.createTimeValueStore();
                 }
             }
-        }, 
+        },
         {
             name: 'projectFilter',
             id: 'projectFilter',
@@ -265,7 +265,43 @@ Ext.define('PTApp', {
         Ext.create('Rally.data.wsapi.Store', {
             model: "TimeEntryValue",
             //fetch: true,
-            fetch: ["Name","FormattedID","TimeEntryItem","TimeEntryValueObject","TimeEntryItemObject","User","UserObject","WorkProduct","Requirement","Parent","PortfolioItem","Task","Artifact","Hierarchy","TypePath","_type","UserObject","UserName","TaskDisplayString","ProjectDisplayString","WorkProductDisplayString","c_SAPNetwork","c_SAPProject","c_SAPSubOperation","c_SAPOperation","Hours","ObjectID","DateVal","c_KMDEmployeeID","Project","c_KMDTimeregistrationIntegration","Owner","EmailAddress","c_DefaultSAPSubOperation"],
+            fetch: [
+                    "Name",
+                    "FormattedID",
+                    "TimeEntryItem",
+                    "TimeEntryValueObject",
+                    "TimeEntryItemObject",
+                    "User",
+                    "UserObject",
+                    "WorkProduct",
+                    "Requirement",
+                    "Parent",
+                    "PortfolioItem",
+                    "Task",
+                    "Artifact",
+                    "Hierarchy",
+                    "TypePath",
+                    "_type",
+                    "UserObject",
+                    "UserName",
+                    "TaskDisplayString",
+                    "ProjectDisplayString",
+                    "WorkProductDisplayString",
+                    "c_SAPNetwork",
+                    "c_SAPProject",
+                    "c_SAPSubOperation",
+                    "c_SAPOperation",
+                    "Hours",
+                    "ObjectID",
+                    "DateVal",
+                    "LastUpdated",
+                    "c_KMDEmployeeID",
+                    "Project",
+                    "c_KMDTimeregistrationIntegration",
+                    "Owner",
+                    "EmailAddress",
+                    "c_DefaultSAPSubOperation"
+                    ],
             filters: filters,
             limit: 'Infinity'
         }).load({
@@ -363,6 +399,9 @@ Ext.define('PTApp', {
             displayName: 'Date',
             name: 'Date'
         }, {
+            displayName: 'Updated',
+            name: 'Updated'
+        }, {
             displayName: 'Employee ID',
             name: 'c_KMDEmployeeID'
         }, {
@@ -388,6 +427,7 @@ Ext.define('PTApp', {
                 'Hours': r.get('Hours'),
                 'ObjectID': r.get("ObjectID"),
                 'Date': Ext.Date.format(r.get("DateVal"), "Ymd"),
+                'Updated': Ext.Date.format(r.get("LastUpdated"), "Ymd"),
                 'c_KMDEmployeeID': r.get("UserObject").get("c_KMDEmployeeID"),
                 'Hierarchy': r.get("Hierarchy"),
                 'KMDTimeregistrationIntegration': r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration"),
@@ -405,7 +445,7 @@ Ext.define('PTApp', {
             header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
-            store: store,            
+            store: store,
             stateful: true,
             stateId: 'tsGrid11',
             features: [{
@@ -475,15 +515,15 @@ Ext.define('PTApp', {
             value = r.get("UserObject").get("c_DefaultSAPSubOperation");
         } else {
             value = app.getFieldValue(r, 'c_SAPSubOperation');
-        }  
+        }
         return value;
     },
 
     // creates a url link for the column based on the formatted id in the column
     renderLink: function(textValue, record) {
-        
+
         var fid = _.first(textValue.split(":"));
-        
+
         var obj = _.find(record.get("Hierarchy"), function(hObj) {
             return fid === hObj.get("FormattedID");
         });
@@ -584,7 +624,7 @@ Ext.define('PTApp', {
                         model.load(object, {
                             fetch: true,
                             callback: function(result, operation) {
-                                
+
                                 deferred.resolve(result);
                             }
                         });
@@ -622,7 +662,7 @@ Ext.define('PTApp', {
                     parentAttr = 'Parent';
                     break;
             }
-            
+
             var parentRef = obj.get(parentAttr);
             if (!_.isUndefined(parentRef) && !_.isNull(parentRef)) {
                 // app.readObject(parentRef._type,parentRef).then({
@@ -788,12 +828,12 @@ Ext.define('PTApp', {
             }
         ];
     },
-    
+
     _launchInfo: function() {
         if ( this.about_dialog ) { this.about_dialog.destroy(); }
         this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
     },
-    
+
     isExternal: function(){
         return typeof(this.getAppId()) == 'undefined';
     }
