@@ -49,20 +49,20 @@ def check_usage()
     puts $!.to_s                                                           # Friendly output when parsing fails
     puts optparse                                                          #
     exit                                                                   #
-  end      
+  end
 
   if @options.auth_file.nil? || !FileTest.exist?(@options.auth_file)
-    puts 
+    puts
     puts "Authorization file #{@options.auth_file} does not exist"
-    puts 
+    puts
     exit 1
   end
-  
+
   if (@options.export_mode == "email")
     if @options.template_file.nil? || !FileTest.exist?(@options.template_file)
-      puts 
+      puts
       puts "Email Template file #{@options.template_file} does not exist"
-      puts 
+      puts
       exit 1
     end
   end
@@ -76,7 +76,7 @@ def connect_to_rally
     :vendor => "Rally Technical Services",
     :version=> "0.1"
   )
-  
+
   config = {
     :base_url   => "#{$rally_server}/slm",
     :api_key    => $rally_api_key,
@@ -94,15 +94,15 @@ def get_pi_types
   query.fetch = true
   query.query_string = "( Ordinal != -1 )"
   query.order = "Ordinal"
-  
+
   results = @rally.find(query)
-  
+
   types = []
   results.each do |result|
     result.read
     types.push(result)
   end
-  
+
   return types
 end
 
@@ -129,10 +129,10 @@ end
 def add_time_entry_to_time_values(task_values,us_values)
   rows = []
   task_values.each do |task|
-    
+
     task_project = task["Project"]
-    
-    task_user_object =task["Owner"] 
+
+    task_user_object =task["Owner"]
 
     task_project_owner = task_project["Owner"]
 
@@ -143,12 +143,12 @@ def add_time_entry_to_time_values(task_values,us_values)
       "TimeEntryProjectObject" => task_project
     })
   end
-  
+
   us_values.each do |story|
 
     story_project = story["Project"]
-    
-    story_user_object =story["Owner"] 
+
+    story_user_object =story["Owner"]
 
     story_project_owner = story_project["Owner"]
 
@@ -165,11 +165,11 @@ end
 
 def get_type_from_ref(ref)
   ref_array = ref.split('/')
-  
+
   oid = ref_array.pop
   type = ref_array.pop
   above = ref_array.pop
-  
+
   if /portfolio/ =~ above
     return "#{above}/#{type}"
   end
@@ -203,7 +203,7 @@ def get_parents(item, hierarchy=[])
 #  puts "Item: #{item['FormattedID']}"
 #  puts "  Field: #{parent_field}"
   parent = item[parent_field]
-  
+
   if parent.nil?
     return hierarchy
   end
@@ -223,9 +223,9 @@ def get_parents(item, hierarchy=[])
   end
 
   hierarchy.push(parent)
-  
+
   hierarchy = get_parents(parent,hierarchy)
-  
+
   return hierarchy
 end
 
@@ -239,7 +239,7 @@ def add_artifact_to_time_values(rows)
       puts "  Warning: This is likely a project time entry."
       next
     end
-    
+
     begin
       artifact.read
     rescue Exception => ex
@@ -247,12 +247,12 @@ def add_artifact_to_time_values(rows)
       puts "    Possible that this item no longer exists #{artifact._refObjectName}/#{artifact.FormattedID}"
     end
     row["Artifact"] = artifact
-    
-    hierarchy = get_parents(artifact) 
-    row["Hierarchy"] = hierarchy 
+
+    hierarchy = get_parents(artifact)
+    row["Hierarchy"] = hierarchy
     updated_rows.push(row)
   end
-  
+
   return updated_rows
 end
 
@@ -261,23 +261,23 @@ def get_field_value(row, field)
   value = nil
 
   row["Hierarchy"].each do |artifact|
-    if value.nil? 
+    if value.nil?
       value = artifact[field]
     end
   end
   return value
 end
-   
+
 def get_so_field_value(row, field)
   value = nil
   if row["TimeEntryProjectObject"]["c_KMDTimeregistrationIntegration"] == "Yes with suboperation substitution"
     value = row["UserObject"] ? row["UserObject"]["c_DefaultSAPSubOperation"]:""
   else
     row["Hierarchy"].each do |artifact|
-      if value.nil? 
+      if value.nil?
         value = artifact[field]
       end
-    end    
+    end
   end
 
   return value
@@ -287,18 +287,18 @@ end
 def get_type_field_value(record, pi_type, field)
   found_item = nil
   type_path = pi_type['TypePath'].downcase
-  
+
   record["Hierarchy"].each do |artifact|
     type = artifact["_type"] || get_type_from_ref(artifact["_ref"])
     if type.downcase == type_path
       found_item = artifact
     end
   end
-  if found_item.nil? 
+  if found_item.nil?
     return ""
   end
-  return found_item[field]    
-      
+  return found_item[field]
+
 end
 
 def convert_to_output_array(rows,pi_types)
@@ -347,12 +347,36 @@ end
 def get_columns()
   return [
           {
+              'text' => 'User',
+              'dataIndex' => 'UserName'
+          },
+          {
               'text' => 'Formatted ID',
               'dataIndex' => 'FormattedID'
-          },     
+          },
           {
               'text' => 'Name',
               'dataIndex' => 'Name'
+          },
+          {
+              'text' => 'Work Product',
+              'dataIndex' => 'WorkProductDisplayString'
+          },
+          {
+              'text' => 'Feature ID',
+              'dataIndex' => 'FeatureID'
+          },
+          {
+              'text' => 'Feature Title',
+              'dataIndex' => 'FeatureName'
+          },
+          {
+              'text' => 'Epic ID',
+              'dataIndex' => 'EpicID'
+          },
+          {
+              'text' => 'Epic Title',
+              'dataIndex' => 'EpicName'
           },
           {
               'text' => 'SAP project',
@@ -361,19 +385,19 @@ def get_columns()
           {
               'text' => 'SAP Network',
               'dataIndex' => 'c_SAPNetwork'
-          }, 
+          },
           {
               'text' => 'SAP Operation',
               'dataIndex' => 'c_SAPOperation'
-          }, 
+          },
           {
               'text' => 'SAP Sub Operation',
               'dataIndex' => 'c_SAPSubOperation'
-          }, 
+          },
           {
               'text' => 'Project',
               'dataIndex' => 'ProjectName'
-          },          
+          },
           ];
 end
 
@@ -405,7 +429,7 @@ def get_csv(rows,error)
       csv_array.push(row_csv_array)
     end
   end
-  
+
   return csv_array
 end
 
@@ -429,10 +453,10 @@ def get_split_csv(rows,error)
         end
       end
       row_csv_array.push(reason)
-      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array) 
+      csv_array[row["ProjectOwnerEmail"]].push(row_csv_array)
     end
   end
-  
+
   return csv_array
 end
 
@@ -457,7 +481,7 @@ def is_valid(row)
   if (row['c_SAPProject'] != nil) && (row['c_SAPNetwork'] != nil) && (row['c_SAPOperation'] != nil) && (row['c_KMDEmployeeID'] != nil)
     if !validate_keys(row)
       valid = $reason_1
-    end 
+    end
   else
     valid = $reason_2
   end
@@ -510,10 +534,10 @@ def send_email(filename,rows,to_address,time_now)
       html_part do
         content_type 'text/html; charset=UTF-8'
         body  template_file
-      end        
+      end
     end
 
-    mail.deliver!  
+    mail.deliver!
   end
 
 end
@@ -521,9 +545,9 @@ end
 def load_keys_from_csv
 
   if @options.keys_file.nil? || !FileTest.exist?(@options.keys_file)
-    puts 
+    puts
     puts "SAP Keys file #{@options.keys_file} does not exist"
-    puts 
+    puts
     exit 1
   end
 

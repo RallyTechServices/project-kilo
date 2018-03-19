@@ -154,6 +154,13 @@ Ext.define('PTApp', {
                 }
             }
         },
+//        {
+//            id: 'columnPicker',
+//            xtype: 'rallyfieldpicker',
+//            modelTypes: ['TimeEntryValue'],
+//            alwaysExpanded: false,
+//            width: 150
+//        },
         {
             id: 'exportButton',
             margin: '5 5 5 5',
@@ -294,6 +301,7 @@ Ext.define('PTApp', {
                     "Hours",
                     "ObjectID",
                     "DateVal",
+                    "CreationDate",
                     "LastUpdated",
                     "c_KMDEmployeeID",
                     "Project",
@@ -396,8 +404,8 @@ Ext.define('PTApp', {
             displayName: 'Unique ID',
             name: 'ObjectID'
         }, {
-            displayName: 'Date',
-            name: 'Date'
+            displayName: 'Created',
+            name: 'Created'
         }, {
             displayName: 'Updated',
             name: 'Updated'
@@ -426,8 +434,8 @@ Ext.define('PTApp', {
                 'EpicName': app.getTypeFieldValue(r, app.piTypes[1], "Name"),
                 'Hours': r.get('Hours'),
                 'ObjectID': r.get("ObjectID"),
-                'Date': Ext.Date.format(r.get("DateVal"), "Ymd"),
-                'Updated': Ext.Date.format(r.get("LastUpdated"), "Ymd"),
+                'Created': Ext.Date.format(r.get("DateVal"), "Ymd H:i"),
+                'Updated': Ext.Date.format(r.get("LastUpdated"), "Ymd H:i"),
                 'c_KMDEmployeeID': r.get("UserObject").get("c_KMDEmployeeID"),
                 'Hierarchy': r.get("Hierarchy"),
                 'KMDTimeregistrationIntegration': r.get("TimeEntryProjectObject").get("c_KMDTimeregistrationIntegration"),
@@ -455,6 +463,12 @@ Ext.define('PTApp', {
             }, {
                 ftype: 'summary'
             }],
+//            plugns: [{
+//                ptype: 'rallygridboardfieldpicker',
+//                modelNames: 'TimeEntryValue',
+//                stateful: true,
+//                stateID: 'tsColSel'
+//            }],
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {

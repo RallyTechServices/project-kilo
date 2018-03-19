@@ -45,11 +45,11 @@ Ext.define('CustomApp', {
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((24 * 60 * 60 * 1000) - 1)));
                             break;
                         case 'This Week':
-                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, dt.getDay())); //Sunday AM
+                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, (dt.getDay()-1))); //Monday AM - WAS:Sunday AM
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
                             break;
                         case 'Last Week':
-                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, 7 + dt.getDay())); //Sunday AM
+                            start = Ext.Date.clearTime(Ext.Date.subtract(dt, Ext.Date.DAY, 6 + dt.getDay())); //Monday AM - WAS:Sunday AM
                             end = Ext.Date.clearTime(Ext.Date.add(start, Ext.Date.MILLI, ((7 * 24 * 60 * 60 * 1000) - 1))); //Saturday PM
                             break;
                         case 'This Month':
