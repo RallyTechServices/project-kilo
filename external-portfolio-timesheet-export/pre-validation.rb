@@ -117,7 +117,7 @@ def get_time_values(model)
   query = RallyAPI::RallyQuery.new
   query.type = model
   #query.fetch = true
-  query.fetch = "ObjectID, Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation,CreationDate" #true
+  query.fetch = "ObjectID,Name,FormattedID,TimeEntryItem,TimeEntryValueObject,TimeEntryItemObject,User,UserObject,WorkProduct,Requirement,Parent,PortfolioItem,Task,Artifact,Hierarchy,TypePath,_type,UserObject,UserName,TaskDisplayString,ProjectDisplayString,WorkProductDisplayString,c_SAPNetwork,c_SAPProject,c_SAPSubOperation,c_SAPOperation,Hours,ObjectID,DateVal,c_KMDEmployeeID,Project,c_KMDTimeregistrationIntegration,Owner,EmailAddress,c_DefaultSAPSubOperation,CreationDate" #true
 
   query.limit = 999999
   query.page_size = 2000
@@ -130,34 +130,50 @@ def add_time_entry_to_time_values(task_values,us_values)
   rows = []
   task_values.each do |task|
 
+puts task["WorkProduct"]["FormattedID"]
+
+#puts task["FormattedID"]
+#puts task["Name"]
+#    work_product_display_string = task["WorkProduct.FormattedID"] + ": " + task["WorkProduct.Name"]
+
+
     task_project = task["Project"]
 
-    task_user_object =task["Owner"]
+    task_user_object = task["Owner"]
 
     task_project_owner = task_project["Owner"]
+
+    task_work_product = task["WorkProduct"]["FormattedID"] + ": " + task["WorkProduct"]["Name"]
+puts task_work_product
 
     rows.push({
       "TimeEntryValueObject" => task,
       "UserObject" => task_user_object,
       "TimeEntryProjectOwnerObject" => task_project_owner,
-      "TimeEntryProjectObject" => task_project
+      "TimeEntryProjectObject" => task_project,
+      "WorkProductDisplayString" => task_work_product
     })
+
   end
 
   us_values.each do |story|
 
     story_project = story["Project"]
 
-    story_user_object =story["Owner"]
+    story_user_object = story["Owner"]
 
     story_project_owner = story_project["Owner"]
+
+    story_work_product = story["FormattedID"] + ": " + story["Name"]
 
     rows.push({
       "TimeEntryValueObject" => story,
       "UserObject" => story_user_object,
       "TimeEntryProjectOwnerObject" => story_project_owner,
-      "TimeEntryProjectObject" => story_project
+      "TimeEntryProjectObject" => story_project,
+      "WorkProductDisplayString" => story_work_product
     })
+
   end
 
   return rows
@@ -247,9 +263,9 @@ def add_artifact_to_time_values(rows)
       puts "    Possible that this item no longer exists #{artifact._refObjectName}/#{artifact.FormattedID}"
     end
     row["Artifact"] = artifact
-
     hierarchy = get_parents(artifact)
     row["Hierarchy"] = hierarchy
+
     updated_rows.push(row)
   end
 
@@ -308,6 +324,7 @@ def convert_to_output_array(rows,pi_types)
       output_rows.push({
         "UserName" => row["UserObject"] ? row["UserObject"]["UserName"] :"",
         "ProjectName"  => row["TimeEntryProjectObject"]["Name"],
+        'WorkProduct' => row["WorkProductDisplayString"],
         "FeatureID"  => get_type_field_value(row, pi_types[0], "FormattedID"),
         "FeatureName" => get_type_field_value(row, pi_types[0], "Name"),
         'test'  => get_field_value(row, 'FormattedID'),
@@ -329,6 +346,7 @@ def convert_to_output_array(rows,pi_types)
       })
     end
   end
+#  puts output_rows
   return output_rows
 end
 
@@ -351,6 +369,10 @@ def get_columns()
               'dataIndex' => 'UserName'
           },
           {
+              'text' => 'Project',
+              'dataIndex' => 'ProjectName'
+          },
+          {
               'text' => 'Formatted ID',
               'dataIndex' => 'FormattedID'
           },
@@ -360,7 +382,7 @@ def get_columns()
           },
           {
               'text' => 'Work Product',
-              'dataIndex' => 'WorkProductDisplayString'
+              'dataIndex' => 'WorkProduct'
           },
           {
               'text' => 'Feature ID',
@@ -393,10 +415,6 @@ def get_columns()
           {
               'text' => 'SAP Sub Operation',
               'dataIndex' => 'c_SAPSubOperation'
-          },
-          {
-              'text' => 'Project',
-              'dataIndex' => 'ProjectName'
           },
           ];
 end
