@@ -404,8 +404,8 @@ Ext.define('PTApp', {
             displayName: 'Unique ID',
             name: 'ObjectID'
         }, {
-            displayName: 'Created',
-            name: 'Created'
+            displayName: 'Date',
+            name: 'date'
         }, {
             displayName: 'Updated',
             name: 'Updated'
@@ -434,7 +434,7 @@ Ext.define('PTApp', {
                 'EpicName': app.getTypeFieldValue(r, app.piTypes[1], "Name"),
                 'Hours': r.get('Hours'),
                 'ObjectID': r.get("ObjectID"),
-                'Created': Ext.Date.format(r.get("DateVal"), "Ymd H:i"),
+                'Date': Ext.Date.format(r.get("DateVal"), "Ymd H:i"),
                 'Updated': Ext.Date.format(r.get("LastUpdated"), "Ymd H:i"),
                 'c_KMDEmployeeID': r.get("UserObject").get("c_KMDEmployeeID"),
                 'Hierarchy': r.get("Hierarchy"),
