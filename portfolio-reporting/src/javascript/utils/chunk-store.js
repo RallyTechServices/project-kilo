@@ -9,7 +9,7 @@ Ext.define('CArABU.technicalservices.chunk.Store',{
 
         this.storeConfig = config.storeConfig || {};
         this.storeType = config.storeType || 'Rally.data.wsapi.Store';
-
+        this.filters = config.filters;
     },
     load: function(){
         var deferred = Ext.create('Deft.Deferred');
@@ -53,12 +53,13 @@ Ext.define('CArABU.technicalservices.chunk.Store',{
         filters = Rally.data.wsapi.Filter.or(filters);
 
 
-        if (config.filters){
-            if (Ext.isArray(config.filters)){
-                config.filters  = Rally.data.wsapi.Filter.and(config.filters);
+        if (this.filters){
+            if (Ext.isArray(this.filters)){
+                this.filters  = Rally.data.wsapi.Filter.and(this.filters);
             }
-            filters = filters.and(config.filters);
+            filters = filters.and(this.filters);
         }
+
         this.logger.log('chunk.Store._fetchChunk',filters.toString());
 
         var fetch = config.fetch || true,

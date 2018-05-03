@@ -62,7 +62,6 @@ Ext.define("TSApp", {
                 }
             }
         ]);
-
     },
 
 
@@ -79,16 +78,39 @@ Ext.define("TSApp", {
         return me._loadWsapiRecords(config);
     },
 
+    // _getTasks: function(filters){
+    //     var deferred = Ext.create('Deft.Deferred');
+    //     var me = this;
+
+    //     Ext.create('CArABU.technicalservices.chunk.Store',{
+    //         storeConfig: {
+    //             model: 'Task',
+    //             fetch: ['ObjectID','TimeSpent','Estimate','ToDo'],
+    //         },
+    //         chunkProperty: 'WorkProduct.ObjectID',
+    //         chunkValue: filters
+    //     }).load().then({
+    //         success: function(records){
+    //             deferred.resolve(records);
+    //         },
+    //         failure: me.showErrorNotification,
+    //         scope: me
+    //     });
+
+    //     return deferred.promise;
+
+    // },    
+
     _getTasks: function(filters){
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
 
         Ext.create('CArABU.technicalservices.chunk.Store',{
             storeConfig: {
-                model: 'Task',
-                fetch: ['ObjectID','TimeSpent','Estimate','ToDo'],
+                model: 'TimeEntryValue',
+                fetch: ['ObjectID','TimeEntryItem','Task','Hours'],
             },
-            chunkProperty: 'WorkProduct.ObjectID',
+            chunkProperty: 'TimeEntryItem.Task.ObjectID',
             chunkValue: filters
         }).load().then({
             success: function(records){
@@ -100,17 +122,34 @@ Ext.define("TSApp", {
 
         return deferred.promise;
 
-        // var me = this;
-        // var config = {
-        //                 model : 'Task',
-        //                 fetch : ['ObjectID','TimeSpent','Estimate','ToDo'],
-        //                 filters : Rally.data.wsapi.Filter.or(filters),
-        //                 limit:'Infinity',
-        //                 enablePostGet:true
-        //             }
-        // return me._loadWsapiRecords(config);
     },    
 
+    _getTimeEntryValues: function(filters){
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+
+        Ext.create('CArABU.technicalservices.chunk.Store',{
+            storeConfig: {
+                model: 'TimeEntryValue',
+                fetch: ['ObjectID','TimeEntryItem','WorkProduct','Hours'],
+            },
+            chunkProperty: 'TimeEntryItem.WorkProduct.ObjectID',
+            chunkValue: filters,
+            filters: [{
+                        property:'TimeEntryItem.Task',
+                        value:null
+                    }]
+        }).load().then({
+            success: function(records){
+                deferred.resolve(records);
+            },
+            failure: me.showErrorNotification,
+            scope: me
+        });
+
+        return deferred.promise;
+
+    },  
 
     updateView: function(){
         var me = this;
@@ -129,26 +168,58 @@ Ext.define("TSApp", {
                 });
 
 
-                me._getTasksFromSnapShotStore(pi_object_ids).then({
+                Deft.Promise.all([me._getTasksFromSnapShotStore(pi_object_ids), me._getWorkProductsFromSnapShotStore(pi_object_ids)],me).then({
                     success: function(results){
-                        // console.log('all taks from snapshot store',results);
-                        // me.totalTaskEstimate = 0;
-                        // me.totalToDo = 0;
-                        me.lb_task_results = results[1];
+
+                        me.lb_task_results = results[0][1];
                         var task_filter = [];
-                        Ext.Array.each(results[1], function(task){
-                            // task_filter.push({property:'WorkProduct.ObjectID',value:task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]});
-                            task_filter.push(task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]);
+                        Ext.Array.each(results[0][1], function(task){
+                            //task_filter.push(task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 2]);
+                            task_filter.push(task.get('_ItemHierarchy')[task.get('_ItemHierarchy').length - 1]);
                         });
 
-                        me._getTasks(task_filter).then({
+                        me.lb_wp_results = results[1][1];
+                        var wp_filter = [];
+                        Ext.Array.each(results[1][1], function(wp){
+                            wp_filter.push(wp.get('_ItemHierarchy')[wp.get('_ItemHierarchy').length - 1]);
+                        });                        
+
+                       Deft.Promise.all([me._getTasks(task_filter), me._getTimeEntryValues(wp_filter)],me).then({
+
                             success: function(records){
                                 console.log('_getTasks>>',records);
-                                // me.totalTaskTimeSpent = 0;
                                 me.taskTimeSpent = {}
-                                Ext.Array.each(records,function(task){
-                                    me.taskTimeSpent[task.get('ObjectID')] = task.get('TimeSpent') || 0;
+                                // Ext.Array.each(records[0],function(task){
+                                //     me.taskTimeSpent[task.get('ObjectID')] = task.get('TimeSpent') || 0;
+                                // });
+
+                                Ext.Array.each(records[0],function(tev){
+                                    var task_object_id = tev.get('TimeEntryItem') && tev.get('TimeEntryItem').Task && tev.get('TimeEntryItem').Task.ObjectID;
+                                    if(task_object_id){ 
+                                        if(me.taskTimeSpent[task_object_id]){
+                                            me.taskTimeSpent[task_object_id] += tev.get('Hours') || 0;
+                                        }else{
+                                            me.taskTimeSpent[task_object_id] = tev.get('Hours') || 0;
+                                        }
+                                    }else{
+                                        console.log('Not associated with WorkProduct',tev)
+                                    }
                                 });
+
+                                me.wpTimeSpent = {}
+                                Ext.Array.each(records[1],function(tev){
+                                    var wp_object_id = tev.get('TimeEntryItem') && tev.get('TimeEntryItem').WorkProduct && tev.get('TimeEntryItem').WorkProduct.ObjectID;
+                                    if(wp_object_id){ 
+                                        if(me.wpTimeSpent[wp_object_id]){
+                                            me.wpTimeSpent[wp_object_id] += tev.get('Hours') || 0;
+                                        }else{
+                                            me.wpTimeSpent[wp_object_id] = tev.get('Hours') || 0;
+                                        }
+                                    }else{
+                                        console.log('Not associated with WorkProduct',tev)
+                                    }
+                                });
+
                                 Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
                                     models: me.selectedPILevel,
                                     enableHierarchy: true
@@ -188,6 +259,12 @@ Ext.define("TSApp", {
                 }
             });
 
+            Ext.Array.each(me.lb_wp_results,function(lbWp){
+                if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
+                    totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
+                }
+            });
+
             totalTimeSpent = isNaN(Ext.util.Format.round(totalTimeSpent,2)) ? 0 :  Ext.util.Format.round(totalTimeSpent,2);  
             totalDiff = isNaN(Ext.util.Format.round((totalEstimate - totalTimeSpent),2)) ? 0 :  Ext.util.Format.round((totalEstimate - totalTimeSpent),2);  
 
@@ -212,6 +289,45 @@ Ext.define("TSApp", {
 
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo"],
+            "find": find,
+            "useHttpPost": true
+            // ,
+            // "removeUnauthorizedSnapshots":true
+        });
+
+        snapshotStore.load({
+            callback: function(records, operation) {
+                console.log('operation>>',operation);
+                if(operation.wasSuccessful()){
+                    deferred.resolve([piObjectIDs,records]);
+                }else{
+                    if(operation.error.status === 403) {
+                        me.showErrorNotification('You do not have required permissions to access the data.');
+                    }else{
+                        me.showErrorNotification('Problem Loading');
+                    }
+                    me.setLoading(false);
+                }
+                
+            },
+            scope:me
+        });
+    
+        return deferred;
+    },
+
+    _getWorkProductsFromSnapShotStore:function(piObjectIDs){
+        var me = this;
+        var deferred = Ext.create('Deft.Deferred');
+
+        var find = {
+                        "_TypeHierarchy": { "$in" : [ "HierarchicalRequirement", "Defect" ] },
+                        "_ItemHierarchy": { $in: piObjectIDs }
+                    };
+        find["__At"] = "current";
+
+        var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+            "fetch": [ "ObjectID","Estimate","TimeSpent","_ItemHierarchy","ToDo","Name"],
             "find": find,
             "useHttpPost": true
             // ,
@@ -289,7 +405,6 @@ Ext.define("TSApp", {
 
     _addTotals:function(grid) {
         var me = this;
-        // var filters = me.down('#pigridboard') && me.down('#pigridboard').gridConfig.store.filters.items[0];
         var filters = grid && grid.gridConfig.store.filters.items[0];
         var allPi;
         me.setLoading('Loading totals...');
@@ -319,9 +434,15 @@ Ext.define("TSApp", {
                             if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
                                 totalEstimate += lbTask.get('Estimate') || 0; 
                                 totalToDo += lbTask.get('ToDo') || 0; 
-                                totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')];
+                                totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
                             }
                         });
+
+                        Ext.Array.each(me.lb_wp_results,function(lbWp){
+                            if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
+                                totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
+                            }
+                        });                        
 
                         me.totalTaskEstimate += totalEstimate || 0;
                         me.totalTaskTimeSpent += totalTimeSpent || 0;
@@ -442,7 +563,7 @@ Ext.define("TSApp", {
                     }                  
                 },
                 
-        }
+        }   
         ];
 
         plugins.push({
@@ -454,8 +575,72 @@ Ext.define("TSApp", {
             stateId: me.getContext().getScopedStateId('field-picker')
         });
 
+        plugins.push({
+            ptype: 'rallygridboardactionsmenu',
+            menuItems: [
+                {
+                    text: 'Export...',
+                    handler: me._showExportMenu,
+                    scope: me
+                }
+            ],
+            buttonConfig: {
+                iconCls: 'icon-export',
+                margin: '15px 10px 0px 0px'
+            }
+        });
+
         return plugins;        
     },
+
+
+
+    _showExportMenu: function(){
+        var me = this;
+        var grid = me.down('#pigridboard').getGridOrBoard();
+
+        if ( !grid ) { return; }
+        
+        this.logger.log('_export',grid);
+
+        var filename = Ext.String.format('portfolio-reporting.csv');
+
+        var records = [];
+
+        this.logger.log('Children',grid.getRootNode().childNodes);
+        this.logger.log('grid.columns',grid.columns);
+
+        me.setLoading("Generating CSV");
+
+        var CSV = "";    
+        var row = "";
+        // Add the column headers
+        var columns = [];
+        Ext.Array.each(grid.columns,function(col){
+            row += col.text.replace("ID"," ID ") + ',';
+            columns.push(col.dataIndex);
+        });
+
+        CSV += row + '\r\n';
+
+        _.each(grid.getRootNode().childNodes, function(record){
+            row = "";
+            _.each(grid.columns,function(col){
+                if(col.dataIndex){
+                    row += record.get(col.dataIndex) ? ( record.get(col.dataIndex)._refObjectName || record.get(col.dataIndex) ) + ',' : ',';
+                }
+            });
+            row += record.get('Estimate') - record.get('TimeSpent') + ','
+            CSV += row + '\r\n';
+        });
+
+        me.CSV = CSV;
+        me.setLoading(false);
+        var filename = Ext.String.format('portfolio-reporting.csv');
+
+        Rally.technicalservices.FileUtilities.saveCSVToFile(me.CSV,filename);
+    },
+
 
     _getColumnCfgs: function(){
         var me = this;

@@ -21,7 +21,14 @@ Ext.override(Rally.data.wsapi.TreeStore,{
                 m.addField({name: 'ToDo', type: 'auto',  defaultValue: 0, modelType: m.typePath});
                 m.addField({name: 'AcceptedLeafStoryPlanEstimateTotal', type: 'auto', defaultValue: 0, modelType: m.typePath});
                 m.addField({name: 'LeafStoryPlanEstimateTotal', type: 'auto',defaultValue: 0, modelType: m.typePath});
-            }            
+            }
+            if (m.typePath.indexOf("defect") != -1){
+                m.addField({name: 'Estimate', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'TimeSpent', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'ToDo', type: 'auto',  defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'AcceptedLeafStoryPlanEstimateTotal', type: 'auto', defaultValue: 0, modelType: m.typePath});
+                m.addField({name: 'LeafStoryPlanEstimateTotal', type: 'auto',defaultValue: 0, modelType: m.typePath});
+            }                            
         });
 
         _.each(Ext.Array.from(models), Rally.ui.grid.data.NodeInterface.decorate, Rally.ui.grid.data.NodeInterface);
