@@ -1,0 +1,7 @@
+{
+    "name": "Release Planning with Options",
+    "sdk": "2.1",
+    "version": "0.1",
+    "className": "CArABU.app.TSApp",
+    "artifact": "US2832"
+}
