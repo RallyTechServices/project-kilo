@@ -154,13 +154,6 @@ Ext.define('PTApp', {
                 }
             }
         },
-//        {
-//            id: 'columnPicker',
-//            xtype: 'rallyfieldpicker',
-//            modelTypes: ['TimeEntryValue'],
-//            alwaysExpanded: false,
-//            width: 150
-//        },
         {
             id: 'exportButton',
             margin: '5 5 5 5',
@@ -201,7 +194,16 @@ Ext.define('PTApp', {
                 });
             }
         }]
-    }],
+    },
+    {
+        xtype: 'panel',
+        itemId: 'filterPanel',
+        layout: {
+                type: 'hbox'
+            },
+        border:1
+    }
+    ],
 
     launch: function() {
 
@@ -443,19 +445,24 @@ Ext.define('PTApp', {
             };
         });
 
-        var store = Ext.create('Ext.data.JsonStore', {
+        console.log('data >>', data);
+
+        var store = Ext.create('Rally.data.custom.Store', {
             fields: fields,
             data: data,
-            statefulFilters:true
+            remoteFilter: false
+            // ,
+            // statefulFilters:true
         });
 
         app.grid = new Ext.grid.GridPanel({
-            header: false,
+            //header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
             store: store,
             stateful: true,
             stateId: 'tsGrid11',
+            //plugins:[{ptype:"gridFilter"}],
             features: [{
                 ftype: 'groupingsummary',
                 showSummaryRow: true,
@@ -463,12 +470,6 @@ Ext.define('PTApp', {
             }, {
                 ftype: 'summary'
             }],
-//            plugns: [{
-//                ptype: 'rallygridboardfieldpicker',
-//                modelNames: 'TimeEntryValue',
-//                stateful: true,
-//                stateID: 'tsColSel'
-//            }],
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {
@@ -520,7 +521,144 @@ Ext.define('PTApp', {
             })
         });
 
+
+        var me = this;
+        var fields_data = Ext.create('Ext.data.Store', {
+            fields: ['name', 'displayName'],
+            data : fields
+        });
+
+        var operator_data = Ext.create('Ext.data.Store', {
+            fields: ['name', 'displayName'],
+            data : [{
+                        displayName: '<',
+                        name: '<'
+                    },
+                    {
+                        displayName: '<=',
+                        name: '<='
+                    },                    
+                    {
+                        displayName: '=',
+                        name: '='
+                    },                    
+                    {
+                        displayName: '>=',
+                        name: '>='
+                    },                    
+                    {
+                        displayName: '>',
+                        name: '>'
+                    },                    
+                    {
+                        displayName: '!=',
+                        name: '!='
+                    },                    
+                    {
+                        displayName: 'contains',
+                        name: 'contains'
+                    },                    
+                    {
+                        displayName: '!contains',
+                        name: '!contains'
+                    }            
+                    ]
+        });
+
+        var margins = '5 5 5 5';
+
+        this.down('#filterPanel').add([
+            {
+                xtype: 'text',
+                text: 'Filter the grid =>',
+                margin: margins,
+                width:250,
+                defaultAlign: 'bottom'
+            },
+            {
+                name: 'fieldName',
+                itemId: 'fieldName',
+                xtype:'combobox',
+                fieldLabel: 'Field:',
+                store: fields_data,
+                queryMode: 'local',
+                displayField: 'displayName',
+                valueField: 'name',
+                width:250,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'operatorList',
+                itemId: 'operatorList',
+                xtype:'combobox',
+                fieldLabel: 'Operator:',
+                store: operator_data,
+                queryMode: 'local',
+                displayField: 'displayName',
+                valueField: 'name',
+                width:200,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'searchValue',
+                itemId: 'searchValue',
+                xtype:'textfield',
+                fieldLabel: 'Value:',
+                width:250,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'filterButton',
+                itemId: 'filterButton',
+                xtype: 'button',
+                text: 'Filter',
+                listeners: {
+                    click: me._filterGrid,
+                    scope:me
+                },
+                margin: margins                
+            },
+            {
+                name: 'clearFilterButton',
+                itemId: 'clearFilterButton',
+                xtype: 'button',
+                text: 'Clear Filter',
+                listeners: {
+                    click: me._clearFilter,
+                    scope:me
+                },
+                margin: margins                
+            }
+        ]);
+
+
         this.add(app.grid);
+        //Ext.util.Observable.capture(app.grid, function(evname) {console.log("fired>>",evname, arguments);})
+    },
+
+    _filterGrid: function(){
+            var field = this.down('#fieldName') && this.down('#fieldName').value;
+            var operator = this.down('#operatorList') && this.down('#operatorList').value;
+            var value = this.down('#searchValue') && this.down('#searchValue').value;
+
+            console.log(field,operator,value);
+            if(field && operator && value){
+                var store = app.grid.getStore();
+                    store.clearFilter();
+                    store.filter([{property: field, operator: operator, value: value}]);                     
+            }
+    },
+
+    _clearFilter: function(){
+        var me = this;
+        var store = app.grid.getStore();
+            store.clearFilter();
+            me.down('#fieldName').reset();
+            me.down('#operatorList').reset();
+            me.down('#searchValue').reset();    
     },
 
     getSubOperationValue: function(r){

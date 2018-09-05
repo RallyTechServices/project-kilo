@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Apr 04 2018 14:33:37 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Sep 05 2018 15:04:49 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Apr 04 2018 14:33:37 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Sep 05 2018 15:04:49 GMT-0700 (PDT)";
         var STORY    = "US8846";
-        var BUILDER  = "bedch02";
-        var CHECKSUM = 258140517327;
+        var BUILDER  = "rajan08";
+        var CHECKSUM = 302924097081;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -664,6 +664,173 @@ Ext.define('Rally.technicalservices.Logger',{
 
 });
 
+/*!
+ * Ext JS GridFilter plugin v0.1
+ * https://github.com/roberto-rodriguez/ExtJs_GridFilterPlugin
+ *
+ *
+ * Copyright 2016 Roberto Rodriguez
+ * Licensed under GNU General Public License v3.
+ * http://www.gnu.org/licenses/
+ * 
+ * 
+ * @class Ext.ux.grid.GridFilter
+ * @extends Ext.AbstractPlugin
+ * 
+ * Grid plugin that adds filtering row below grid header.
+ * Allows remote filtering, supports pagination grids.
+ * 
+ * To add filtering to column, define "filter" property in the column configuration
+ * 
+ * 
+ * <b>What it does?</b>
+ * When the user adds criterias to the filter and hits enter,
+ * The plugin reload the grid, including in the query params the values of the filters
+ * 
+ * The values are collected just for the filters that are not empty,
+ *  and are sent to the server in the format:
+ *   dataIndex:VALUE    // Example  firstName: 'Roberto'
+ *   
+ *   
+ * 
+ Example:
+ 
+ var grid = new Ext.grid.GridPanel({
+ columns: [
+ {
+ text: "User ID",
+ dataIndex: 'userId', 
+ filter: true
+ },
+ {
+ text: "First Name",
+ dataIndex: 'firstName', 
+ filter: true
+ },
+ {
+ text: "First Name",
+ dataIndex: 'firstName', 
+ filter: lastName
+ }
+ ],
+ plugins:[{ptype:"gridFilter"}]
+ ...
+ });
+ */
+
+Ext.define('Ext.ux.grid.GridFilter', {
+    extend: 'Ext.AbstractPlugin',
+    alias: 'plugin.gridFilter',
+    init: function (grid) {
+        var me = this;
+        grid.relayEvents(grid.getStore(), ['viewready', 'load', 'beforeload', 'sortchange','resize']);
+        grid.addListener('beforeload', me.onBeforeLoad);
+        grid.addListener('viewready', me.storeload);
+        grid.addListener('load', me.storeload);
+        grid.addListener('sortchange', me.storeload);
+        grid.addListener('resize', me.storeload);
+    },
+    storeload: function () {
+        console.log('storeload');
+        var me = this;
+        var body = me.body.dom;
+
+        var table = body.getElementsByClassName('x-grid-table')[0];
+
+        if (!table) {
+            return;
+        }
+
+        var tbody = table.getElementsByTagName('tbody')[0];
+
+        var tr1 = tbody.childNodes[0];
+
+        if (tr1) {
+            me['tr1'] = tr1;
+        } else {
+            if (me['tr1']) {
+                tr1 = me['tr1'];
+            } else {
+                return;
+            }
+        }
+
+        if (tr1.classList.contains('ux-grid-filter')) {
+            return;
+        }
+
+        var newTr = document.createElement('tr');
+        newTr.setAttribute("class", "ux-grid-filter");
+
+        for (var i = 0; i < tr1.childNodes.length; i++) {
+
+            var td = document.createElement('td');
+
+            td.setAttribute("class", "x-grid-cell-special");
+            td.setAttribute("style", "border: solid gray 1px;");
+
+            if (me.columns[i].initialConfig.filter) {
+                td.setAttribute("style", "width:100%;padding:2px 5px;border: solid gray 1px;");
+
+                var input = document.createElement('input');
+                input.setAttribute("style", "width:100%");
+                input.setAttribute("name", me.columns[i].initialConfig.dataIndex);
+
+                if (me.filters && me.filters[me.columns[i].initialConfig.dataIndex]) {
+                    input.value = me.filters[me.columns[i].initialConfig.dataIndex];
+                }
+
+                input.onkeyup = function (event) {
+                    if (event.keyCode === 13) {
+                        var tr = event.target.parentNode.parentNode;
+
+                        var searchParams = {};
+
+                        for (var j = 0; j < tr.childNodes.length; j++) {
+                            if (tr.childNodes[j].childNodes[0] && tr.childNodes[j].childNodes[0].value) {
+                                searchParams[tr.childNodes[j].childNodes[0].name] = tr.childNodes[j].childNodes[0].value;
+                            }
+                        }
+                        me['filters'] = searchParams;
+
+                        var clonedSearchParams = {//for avoid include start and page in the global var
+                            start: 0,
+                            page: 1
+                        };
+
+                        for (var key in searchParams) {
+                            clonedSearchParams[key] = searchParams[key];
+                        }
+
+                        me.store.load({params: clonedSearchParams});
+                        me.store.currentPage = 1;
+                    }
+                };
+                td.appendChild(input);
+            }
+            newTr.appendChild(td);
+        }
+
+        if (tbody.childNodes.length > 0) {
+            tbody.insertBefore(newTr, tr1);
+        } else {
+            tbody.appendChild(newTr);
+        }
+
+    },
+    onBeforeLoad: function (store, operation, eOpts) {
+        var me = this;
+
+        if (me.filters) {
+            store.getProxy().extraParams = me.filters;
+        }
+
+        if (!me['pageSize']) {
+            me['pageSize'] = --store.pageSize;
+            store.getProxy().extraParams['limit'] = me['pageSize'];
+        }
+    }
+});
 Ext.override(Ext.grid.feature.Grouping, {
 
     setupRowData: function(record, idx, rowValues) {
@@ -863,6 +1030,36 @@ Ext.override(Ext.grid.GridPanel, {
             this.store.group(state.storeState.groupers);
         }
     }
+});
+
+Ext.override(Ext.util.Filter, {
+    operatorFns: {
+        "<": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) < this.value;
+        },
+        "<=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) <= this.value;
+        },
+        "=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) == this.value;
+        },
+        ">=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) >= this.value;
+        },
+        ">": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) > this.value;
+        },
+        "!=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) != this.value;
+        },
+        "contains": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) !== -1;
+        },
+        "!contains": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) == -1;
+        }
+    }
+
 });
 Ext.define('Rally.technicalservices.FileUtilities', {
     singleton: true,
@@ -2647,13 +2844,6 @@ Ext.define('PTApp', {
                 }
             }
         },
-//        {
-//            id: 'columnPicker',
-//            xtype: 'rallyfieldpicker',
-//            modelTypes: ['TimeEntryValue'],
-//            alwaysExpanded: false,
-//            width: 150
-//        },
         {
             id: 'exportButton',
             margin: '5 5 5 5',
@@ -2694,7 +2884,16 @@ Ext.define('PTApp', {
                 });
             }
         }]
-    }],
+    },
+    {
+        xtype: 'panel',
+        itemId: 'filterPanel',
+        layout: {
+                type: 'hbox'
+            },
+        border:1
+    }
+    ],
 
     launch: function() {
 
@@ -2936,19 +3135,24 @@ Ext.define('PTApp', {
             };
         });
 
-        var store = Ext.create('Ext.data.JsonStore', {
+        console.log('data >>', data);
+
+        var store = Ext.create('Rally.data.custom.Store', {
             fields: fields,
             data: data,
-            statefulFilters:true
+            remoteFilter: false
+            // ,
+            // statefulFilters:true
         });
 
         app.grid = new Ext.grid.GridPanel({
-            header: false,
+            //header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
             store: store,
             stateful: true,
             stateId: 'tsGrid11',
+            //plugins:[{ptype:"gridFilter"}],
             features: [{
                 ftype: 'groupingsummary',
                 showSummaryRow: true,
@@ -2956,12 +3160,6 @@ Ext.define('PTApp', {
             }, {
                 ftype: 'summary'
             }],
-//            plugns: [{
-//                ptype: 'rallygridboardfieldpicker',
-//                modelNames: 'TimeEntryValue',
-//                stateful: true,
-//                stateID: 'tsColSel'
-//            }],
             columns: _.map(fields, function(f) {
                 if (f.name === 'Hours') {
                     return {
@@ -3013,7 +3211,144 @@ Ext.define('PTApp', {
             })
         });
 
+
+        var me = this;
+        var fields_data = Ext.create('Ext.data.Store', {
+            fields: ['name', 'displayName'],
+            data : fields
+        });
+
+        var operator_data = Ext.create('Ext.data.Store', {
+            fields: ['name', 'displayName'],
+            data : [{
+                        displayName: '<',
+                        name: '<'
+                    },
+                    {
+                        displayName: '<=',
+                        name: '<='
+                    },                    
+                    {
+                        displayName: '=',
+                        name: '='
+                    },                    
+                    {
+                        displayName: '>=',
+                        name: '>='
+                    },                    
+                    {
+                        displayName: '>',
+                        name: '>'
+                    },                    
+                    {
+                        displayName: '!=',
+                        name: '!='
+                    },                    
+                    {
+                        displayName: 'contains',
+                        name: 'contains'
+                    },                    
+                    {
+                        displayName: '!contains',
+                        name: '!contains'
+                    }            
+                    ]
+        });
+
+        var margins = '5 5 5 5';
+
+        this.down('#filterPanel').add([
+            {
+                xtype: 'text',
+                text: 'Filter the grid =>',
+                margin: margins,
+                width:250,
+                defaultAlign: 'bottom'
+            },
+            {
+                name: 'fieldName',
+                itemId: 'fieldName',
+                xtype:'combobox',
+                fieldLabel: 'Field:',
+                store: fields_data,
+                queryMode: 'local',
+                displayField: 'displayName',
+                valueField: 'name',
+                width:250,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'operatorList',
+                itemId: 'operatorList',
+                xtype:'combobox',
+                fieldLabel: 'Operator:',
+                store: operator_data,
+                queryMode: 'local',
+                displayField: 'displayName',
+                valueField: 'name',
+                width:200,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'searchValue',
+                itemId: 'searchValue',
+                xtype:'textfield',
+                fieldLabel: 'Value:',
+                width:250,
+                labelWidth: 100,
+                margin: margins
+            },
+            {
+                name: 'filterButton',
+                itemId: 'filterButton',
+                xtype: 'button',
+                text: 'Filter',
+                listeners: {
+                    click: me._filterGrid,
+                    scope:me
+                },
+                margin: margins                
+            },
+            {
+                name: 'clearFilterButton',
+                itemId: 'clearFilterButton',
+                xtype: 'button',
+                text: 'Clear Filter',
+                listeners: {
+                    click: me._clearFilter,
+                    scope:me
+                },
+                margin: margins                
+            }
+        ]);
+
+
         this.add(app.grid);
+        //Ext.util.Observable.capture(app.grid, function(evname) {console.log("fired>>",evname, arguments);})
+    },
+
+    _filterGrid: function(){
+            var field = this.down('#fieldName') && this.down('#fieldName').value;
+            var operator = this.down('#operatorList') && this.down('#operatorList').value;
+            var value = this.down('#searchValue') && this.down('#searchValue').value;
+
+            console.log(field,operator,value);
+            if(field && operator && value){
+                var store = app.grid.getStore();
+                    store.clearFilter();
+                    store.filter([{property: field, operator: operator, value: value}]);                     
+            }
+    },
+
+    _clearFilter: function(){
+        var me = this;
+        var store = app.grid.getStore();
+            store.clearFilter();
+            me.down('#fieldName').reset();
+            me.down('#operatorList').reset();
+            me.down('#searchValue').reset();    
     },
 
     getSubOperationValue: function(r){
