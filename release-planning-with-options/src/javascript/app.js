@@ -52,10 +52,6 @@ Ext.define("CArABU.app.TSApp", {
                     filter: this._onBoardFilter,
                     filtercomplete: this._onBoardFilterComplete,
                     scope: this
-                },
-                rowConfig: {
-                    field: 'Parent',
-                    enableCrossRowDragging: false
                 }
             },
             context: context,
@@ -82,14 +78,6 @@ Ext.define("CArABU.app.TSApp", {
     _getPlugins: function () {
         var context = this.getContext(),
             boardFieldBlacklist = [
-                'AcceptedLeafStoryCount',
-                'AcceptedLeafStoryPlanEstimateTotal',
-                'DirectChildrenCount',
-                'LeafStoryCount',
-                'LeafStoryPlanEstimateTotal',
-                'LastUpdateDate',
-                'State',
-                'UnEstimatedLeafStoryCount'
             ];
 
         return [
