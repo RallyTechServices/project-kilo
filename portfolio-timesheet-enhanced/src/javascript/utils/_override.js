@@ -198,3 +198,33 @@ Ext.override(Ext.grid.GridPanel, {
         }
     }
 });
+
+Ext.override(Ext.util.Filter, {
+    operatorFns: {
+        "<": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) < this.value;
+        },
+        "<=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) <= this.value;
+        },
+        "=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) == this.value;
+        },
+        ">=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) >= this.value;
+        },
+        ">": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) > this.value;
+        },
+        "!=": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) != this.value;
+        },
+        "contains": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) !== -1;
+        },
+        "!contains": function(candidate) {
+            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) == -1;
+        }
+    }
+
+});
