@@ -566,7 +566,7 @@ Ext.define('PTApp', {
         });
 
         var margins = '5 5 5 5';
-
+        this.down('#filterPanel').removeAll();
         this.down('#filterPanel').add([
             {
                 xtype: 'text',
