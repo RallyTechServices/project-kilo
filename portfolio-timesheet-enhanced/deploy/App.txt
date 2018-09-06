@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Sep 05 2018 15:07:28 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Sep 06 2018 10:54:57 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Sep 05 2018 15:07:28 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Sep 06 2018 10:54:57 GMT-0700 (PDT)";
         var STORY    = "US8846";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 278630131312;
+        var CHECKSUM = 278892990217;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -3089,7 +3089,7 @@ Ext.define('PTApp', {
         });
 
         var margins = '5 5 5 5';
-
+        this.down('#filterPanel').removeAll();
         this.down('#filterPanel').add([
             {
                 xtype: 'text',
