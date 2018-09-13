@@ -8,7 +8,8 @@
             if(this.pointField == 'RefinedEstimate'){
                 this.store.fetch = 'RefinedEstimate';
                 this.store.filters = columnStore.filters.clone();
-                this.store.pageSize = Infinity;                
+                this.store.pageSize = 2000;
+                this.store.limit = Infinity;                
             }else{
                 this.store.fetch = ['sum:[' + this.pointField + ']'];
                 this.store.filters = columnStore.filters.clone();

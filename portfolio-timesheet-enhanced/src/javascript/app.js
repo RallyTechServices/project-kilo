@@ -317,6 +317,7 @@ Ext.define('PTApp', {
         }).load({
             callback: function(records, operation, successful) {
                 if (records.length === 0) {
+
                     app.hideMask();
                     app.add({
                         html: "No records for this date range",
@@ -447,16 +448,17 @@ Ext.define('PTApp', {
 
         console.log('data >>', data);
 
-        var store = Ext.create('Rally.data.custom.Store', {
+        var store = Ext.create('Ext.data.JsonStore', {
             fields: fields,
             data: data,
-            remoteFilter: false
+            // remoteFilter: false,
+            // pageSize: 2000
             // ,
-            // statefulFilters:true
+            statefulFilters:true
         });
 
         app.grid = new Ext.grid.GridPanel({
-            //header: false,
+            header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
             store: store,
@@ -586,7 +588,9 @@ Ext.define('PTApp', {
                 valueField: 'name',
                 width:250,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('fieldName')
             },
             {
                 name: 'operatorList',
@@ -599,7 +603,9 @@ Ext.define('PTApp', {
                 valueField: 'name',
                 width:200,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('operatorList')
             },
             {
                 name: 'searchValue',
@@ -608,7 +614,13 @@ Ext.define('PTApp', {
                 fieldLabel: 'Value:',
                 width:250,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('searchValue'),
+                listeners: {
+                    change: me._filterGrid,
+                    scope:me
+                }
             },
             {
                 name: 'filterButton',
