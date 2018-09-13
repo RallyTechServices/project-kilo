@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Sep 06 2018 10:54:57 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Sep 12 2018 17:25:53 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Sep 06 2018 10:54:57 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Sep 12 2018 17:25:53 GMT-0700 (PDT)";
         var STORY    = "US8846";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 278892990217;
+        var CHECKSUM = 280793422018;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -2840,6 +2840,7 @@ Ext.define('PTApp', {
         }).load({
             callback: function(records, operation, successful) {
                 if (records.length === 0) {
+
                     app.hideMask();
                     app.add({
                         html: "No records for this date range",
@@ -2970,16 +2971,17 @@ Ext.define('PTApp', {
 
         console.log('data >>', data);
 
-        var store = Ext.create('Rally.data.custom.Store', {
+        var store = Ext.create('Ext.data.JsonStore', {
             fields: fields,
             data: data,
-            remoteFilter: false
+            // remoteFilter: false,
+            // pageSize: 2000
             // ,
-            // statefulFilters:true
+            statefulFilters:true
         });
 
         app.grid = new Ext.grid.GridPanel({
-            //header: false,
+            header: false,
             id: 'tsGrid',
             title: 'TimeSheetData',
             store: store,
@@ -3109,7 +3111,9 @@ Ext.define('PTApp', {
                 valueField: 'name',
                 width:250,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('fieldName')
             },
             {
                 name: 'operatorList',
@@ -3122,7 +3126,9 @@ Ext.define('PTApp', {
                 valueField: 'name',
                 width:200,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('operatorList')
             },
             {
                 name: 'searchValue',
@@ -3131,7 +3137,13 @@ Ext.define('PTApp', {
                 fieldLabel: 'Value:',
                 width:250,
                 labelWidth: 100,
-                margin: margins
+                margin: margins,
+                stateful:true,
+                stateId: me.getContext().getScopedStateId('searchValue'),
+                listeners: {
+                    change: me._filterGrid,
+                    scope:me
+                }
             },
             {
                 name: 'filterButton',

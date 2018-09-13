@@ -15,6 +15,7 @@ Ext.define("CArABU.app.TSApp", {
     launch: function() {
         var me = this;
         console.log('Launching');
+        Rally.ui.notify.Notifier.hide();
         Rally.data.util.PortfolioItemHelper.loadTypeOrDefault({
             defaultToLowest: true,
             requester: this,
