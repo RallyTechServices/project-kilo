@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Timesheet App</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Sep 12 2018 17:25:53 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Sep 17 2018 16:30:41 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Sep 12 2018 17:25:53 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Mon Sep 17 2018 16:30:41 GMT-0700 (PDT)";
         var STORY    = "US8846";
         var BUILDER  = "rajan08";
-        var CHECKSUM = 280793422018;
+        var CHECKSUM = 283166862533;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -874,7 +874,7 @@ Ext.override(Ext.util.Filter, {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) <= this.value;
         },
         "=": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) == this.value;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()) == this.value.toLowerCase();
         },
         ">=": function(candidate) {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) >= this.value;
@@ -883,13 +883,13 @@ Ext.override(Ext.util.Filter, {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) > this.value;
         },
         "!=": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) != this.value;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()) != this.value.toLowerCase();
         },
         "contains": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) !== -1;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()).indexOf(this.value.toLowerCase()) !== -1;
         },
         "!contains": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) == -1;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()).indexOf(this.value.toLowerCase()) == -1;
         }
     }
 
