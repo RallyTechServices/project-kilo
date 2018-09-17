@@ -208,7 +208,7 @@ Ext.override(Ext.util.Filter, {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) <= this.value;
         },
         "=": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) == this.value;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()) == this.value.toLowerCase();
         },
         ">=": function(candidate) {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) >= this.value;
@@ -217,13 +217,13 @@ Ext.override(Ext.util.Filter, {
             return Ext.coerce(this.getRoot(candidate)[this.property], this.value) > this.value;
         },
         "!=": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value) != this.value;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()) != this.value.toLowerCase();
         },
         "contains": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) !== -1;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()).indexOf(this.value.toLowerCase()) !== -1;
         },
         "!contains": function(candidate) {
-            return Ext.coerce(this.getRoot(candidate)[this.property], this.value).indexOf(this.value) == -1;
+            return Ext.coerce(this.getRoot(candidate)[this.property] && this.getRoot(candidate)[this.property].toLowerCase(), this.value.toLowerCase()).indexOf(this.value.toLowerCase()) == -1;
         }
     }
 
