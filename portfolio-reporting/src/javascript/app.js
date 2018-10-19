@@ -69,7 +69,7 @@ Ext.define("TSApp", {
         var me = this;
         var config = {
                         model : selectedPI,
-                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal','LeafStoryPlanEstimateTotal','PlanEstimate','ScheduleState'],
+                        fetch : ['ObjectID','AcceptedLeafStoryPlanEstimateTotal','LeafStoryPlanEstimateTotal','PlanEstimate','ScheduleState','Parent'],
                         limit:'Infinity'
                     }
         if(filters){
@@ -246,32 +246,36 @@ Ext.define("TSApp", {
         var me = this;
         me.suspendLayouts();
         Ext.Array.each(records,function(r){
+            // if(r.get('_type') == "hierarchicalrequirement" && r.get('Parent') != null){
+            //     r.parentNode.removeChild(r);
+            // }else{
+                var totalEstimate = 0;
+                var totalTimeSpent = 0;
+                var totalToDo = 0;
+                var totalDiff = 0;
+                Ext.Array.each(me.lb_task_results,function(lbTask){
+                    if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
+                        totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
+                        totalToDo +=  lbTask.get('ToDo') || 0;
+                        totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
+                    }
+                });
 
-            var totalEstimate = 0;
-            var totalTimeSpent = 0;
-            var totalToDo = 0;
-            var totalDiff = 0;
-            Ext.Array.each(me.lb_task_results,function(lbTask){
-                if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
-                    totalEstimate += lbTask.get('Estimate') || 0; //Ext.Number.toFixed(totalEstimate,2)
-                    totalToDo +=  lbTask.get('ToDo') || 0;
-                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
-                }
-            });
+                Ext.Array.each(me.lb_wp_results,function(lbWp){
+                    if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
+                        totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
+                    }
+                });
 
-            Ext.Array.each(me.lb_wp_results,function(lbWp){
-                if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
-                    totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
-                }
-            });
+                totalTimeSpent = isNaN(Ext.util.Format.round(totalTimeSpent,2)) ? 0 :  Ext.util.Format.round(totalTimeSpent,2);  
+                totalDiff = isNaN(Ext.util.Format.round((totalEstimate - totalTimeSpent),2)) ? 0 :  Ext.util.Format.round((totalEstimate - totalTimeSpent),2);  
 
-            totalTimeSpent = isNaN(Ext.util.Format.round(totalTimeSpent,2)) ? 0 :  Ext.util.Format.round(totalTimeSpent,2);  
-            totalDiff = isNaN(Ext.util.Format.round((totalEstimate - totalTimeSpent),2)) ? 0 :  Ext.util.Format.round((totalEstimate - totalTimeSpent),2);  
+                r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
+                r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
+                r.set('ToDo', totalToDo);
+                r.set('Diff', totalDiff);                
+            //}
 
-            r.set('Estimate', Ext.util.Format.round(totalEstimate,2));
-            r.set('TimeSpent', Ext.util.Format.round(totalTimeSpent,2));
-            r.set('ToDo', totalToDo);
-            r.set('Diff', totalDiff);
         });
         me.resumeLayouts();
     },
@@ -410,6 +414,7 @@ Ext.define("TSApp", {
         me.setLoading('Loading totals...');
             me._getSelectedPIs(me.selectedPILevel[0],filters).then({
                 success: function(records){
+                  
                     me.totalLeafStoryPlanEstimateTotal = 0;
                     me.totalAcceptedLeafStoryPlanEstimateTotal = 0;  
                     me.totalTaskEstimate = 0;
@@ -417,36 +422,40 @@ Ext.define("TSApp", {
                     me.totalTaskToDo = 0;
                     me.totalDiff = 0;
                     Ext.Array.each(records,function(r){
-                        var totalEstimate = 0;
-                        var totalTimeSpent = 0;
-                        var totalToDo = 0;
-                        if(me.selectedPILevel[0]=='hierarchicalrequirement'){
-                            me.totalLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;
-                            if(me.selectedPILevel[0]=='hierarchicalrequirement' && r.get('ScheduleState') == 'Accepted'){
-                                me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;  
+                        if(r.get('_type') == "hierarchicalrequirement" && r.get('Parent') != null){
+                            //r.parentNode.removeChild(r);
+                        }else{                          
+                            var totalEstimate = 0;
+                            var totalTimeSpent = 0;
+                            var totalToDo = 0;
+                            if(me.selectedPILevel[0]=='hierarchicalrequirement'){
+                                me.totalLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;
+                                if(me.selectedPILevel[0]=='hierarchicalrequirement' && r.get('ScheduleState') == 'Accepted'){
+                                    me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('PlanEstimate') || 0;  
+                                }
+                            }else{
+                                me.totalLeafStoryPlanEstimateTotal += r.get('LeafStoryPlanEstimateTotal') || 0;
+                                me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('AcceptedLeafStoryPlanEstimateTotal') || 0;                
                             }
-                        }else{
-                            me.totalLeafStoryPlanEstimateTotal += r.get('LeafStoryPlanEstimateTotal') || 0;
-                            me.totalAcceptedLeafStoryPlanEstimateTotal += r.get('AcceptedLeafStoryPlanEstimateTotal') || 0;                
+
+                            Ext.Array.each(me.lb_task_results,function(lbTask){
+                                if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
+                                    totalEstimate += lbTask.get('Estimate') || 0; 
+                                    totalToDo += lbTask.get('ToDo') || 0; 
+                                    totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
+                                }
+                            });
+
+                            Ext.Array.each(me.lb_wp_results,function(lbWp){
+                                if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
+                                    totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
+                                }
+                            });                        
+
+                            me.totalTaskEstimate += totalEstimate || 0;
+                            me.totalTaskTimeSpent += totalTimeSpent || 0;
+                            me.totalTaskToDo += totalToDo || 0;
                         }
-
-                        Ext.Array.each(me.lb_task_results,function(lbTask){
-                            if(Ext.Array.contains(lbTask.get('_ItemHierarchy'),r.get('ObjectID'))){
-                                totalEstimate += lbTask.get('Estimate') || 0; 
-                                totalToDo += lbTask.get('ToDo') || 0; 
-                                totalTimeSpent += me.taskTimeSpent[lbTask.get('ObjectID')] || 0;
-                            }
-                        });
-
-                        Ext.Array.each(me.lb_wp_results,function(lbWp){
-                            if(Ext.Array.contains(lbWp.get('_ItemHierarchy'),r.get('ObjectID'))){
-                                totalTimeSpent += me.wpTimeSpent[lbWp.get('ObjectID')] || 0;
-                            }
-                        });                        
-
-                        me.totalTaskEstimate += totalEstimate || 0;
-                        me.totalTaskTimeSpent += totalTimeSpent || 0;
-                        me.totalTaskToDo += totalToDo || 0;
 
                     });
 
